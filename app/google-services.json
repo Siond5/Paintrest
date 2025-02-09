@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "464462534523",
+    "project_id": "sion-project-ort",
+    "storage_bucket": "sion-project-ort.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:464462534523:android:8e93dcb039c35fabc44fde",
+        "android_client_info": {
+          "package_name": "com.example.login"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYDqZwuRXbk_895C_1XuKqCIsJYkYQVg8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
