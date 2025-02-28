@@ -114,7 +114,7 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
                                 if (task.isSuccessful()) {
                                     try {
                                         MyUser user = new MyUser(firstname, lastname, phone, yob);
-                                        Colors color = new Colors();
+                                        Colors color = new Colors(SignupActivity.this);
 
                                         FirebaseFirestore store = FirebaseFirestore.getInstance();
                                         store.collection("users")
