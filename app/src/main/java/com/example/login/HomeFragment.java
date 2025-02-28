@@ -36,6 +36,6 @@ public class HomeFragment extends Fragment {
     public void loadColor(Activity activity, View view){
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("color", R.color.Default);
-        view.setBackgroundColor(ContextCompat.getColor(activity, color));
+        view.setBackgroundColor(color);
     }
 }

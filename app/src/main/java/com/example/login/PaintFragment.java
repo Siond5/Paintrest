@@ -89,6 +89,5 @@ public class PaintFragment extends Fragment {
     public void loadColor(Activity activity, View view){
         sp = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sp.getInt("color", R.color.Default);
-        view.setBackgroundColor(ContextCompat.getColor(activity, color));
-    }
+        view.setBackgroundColor(color);    }
 }

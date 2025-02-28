@@ -48,7 +48,7 @@ public class SettingsFragment extends Fragment {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         set_color.setAdapter(adapter);
 
-        sp = getActivity().getSharedPreferences("colors", Context.MODE_PRIVATE);
+        sp = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         loadColor(getActivity(), view);
         changeSelectionBasedOnColor(view, getActivity());
 
@@ -68,7 +68,7 @@ public class SettingsFragment extends Fragment {
     }
 
     private void changeColorBasedOnSelection(int position) {
-        int color=getContextColor(R.color.red);
+        int color=sp.getInt("color", R.color.Default);
         switch (position) {
             case 0:
                 color =getContextColor( R.color.Default);
@@ -110,7 +110,7 @@ public class SettingsFragment extends Fragment {
         }
         ColorDrawable colorDrawable = (ColorDrawable) getView().getBackground();
         int color1 =  colorDrawable.getColor();
-        if (color != color1) {
+        if (color != color1&& position!=10) {
             setBackgroundColor(color);
         }
     }
@@ -136,9 +136,8 @@ public class SettingsFragment extends Fragment {
     }
 
     public void loadColor(Activity activity, View view){
-        sp = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        int color = sp.getInt("color", R.color.Default);
-        view.setBackgroundColor(ContextCompat.getColor(activity, color));
+        int color = sp.getInt("userDetails", R.color.Default);
+        view.setBackgroundColor(color);
     }
 
     private static void changeSelectionBasedOnColor( View view, Activity activity) {
@@ -155,8 +154,7 @@ public class SettingsFragment extends Fragment {
                 return;
             }
         }
-        if (flag==false)
+        if (flag!=true)
             set_color.setSelection(10);
-        set_color.setSelection(0);
     }
 }
