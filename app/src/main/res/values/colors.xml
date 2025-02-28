@@ -3,7 +3,7 @@
     <color name="Default">#6a82b8</color>
     <color name="button">#674675</color>
 
-    <color name="black">#FF000000</color>
+    <color name="black">#000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="blue">#0000FF</color>
     <color name="purple">#A020F0</color>

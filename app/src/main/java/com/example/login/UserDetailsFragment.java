@@ -1,25 +1,22 @@
 package com.example.login;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
-import androidx.core.content.ContextCompat;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
-
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,55 +24,31 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
-
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-
-import java.io.ByteArrayOutputStream;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import java.io.File;
+import android.app.Activity;
+import androidx.core.content.ContextCompat;
 
+import androidx.annotation.NonNull;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 public class UserDetailsFragment extends Fragment implements View.OnClickListener {
     private EditText etDetailsEmail, etDetailsFirstName, etDetailsLastName, etDetailsPhone, etDetailsYOB;
     private Button btnDetailsSave, btnLogout, btnDeleteAccount;
     private ImageView ivProfilePicture;
-    private Uri profileImageUri;
-    private String base64Photo;
+    private Uri profileImageUri, croppedImageUri;
     private SharedPreferences sharedPreferences;
-    ActivityResultLauncher<Intent> pickPhotoFromGallery;
 
     public UserDetailsFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        pickPhotoFromGallery = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        profileImageUri = result.getData().getData();
-                        ivProfilePicture.setImageURI(profileImageUri);
-//                        savePictureToSharedPreferencesAndFirebase();
-                    } else {
-                        Toast.makeText(getActivity(), "Failed to select photo.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
-
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_user_details, container, false);
 
         ivProfilePicture = view.findViewById(R.id.ivProfilePicture);
@@ -90,15 +63,12 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
         loadColor(getActivity(), view);
         loadDetails();
-//        loadPictureFromSharedPreferencesAndFirebase();
+       // loadProfilePicture();
 
         btnDetailsSave.setOnClickListener(this);
         btnLogout.setOnClickListener(this);
         btnDeleteAccount.setOnClickListener(this);
         ivProfilePicture.setOnClickListener(v -> showImageOptions());
-
-
-
 
         return view;
     }
@@ -165,17 +135,13 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
             store.collection("users").document(uid).set(user);
             Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
-        }
-
-        else if (view == btnLogout) {
+        } else if (view == btnLogout) {
             Intent intent = new Intent(this.getActivity(), MainActivity.class);
             startActivity(intent);
             FirebaseAuth fbAuth = FirebaseAuth.getInstance();
             fbAuth.signOut();
             getActivity().finish();
-        }
-
-        else if (view == btnDeleteAccount) {
+        } else if (view == btnDeleteAccount) {
             FirebaseAuth fbAuth = FirebaseAuth.getInstance();
             String uid = fbAuth.getUid();
             FirebaseFirestore store = FirebaseFirestore.getInstance();
@@ -196,7 +162,171 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
             }
         }
+    }
 
+    private void showImageOptions() {
+        String[] options = {"View Profile Picture", "Change Profile Picture", "Delete Profile Picture", "Cancel"};
+        new AlertDialog.Builder(getContext())
+                .setTitle("Set Profile Picture")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        viewPhoto();
+                    } else if (which == 1) {
+                        pickImage();
+                    } else if (which == 2) {
+                        deletePhoto();
+                    } else {
+                        dialog.dismiss();
+                    }
+                })
+                .show();
+    }
+
+    private void pickImage() {
+        String[] options = {"Take a Photo", "Pick from Gallery"};
+        new AlertDialog.Builder(getContext())
+                .setTitle("Change Photo")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) { // Camera
+                        initializeCameraUri();
+                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
+                        takePhoto.launch(intent);
+                    } else if (which == 1) { // Gallery
+                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                        pickImageFromGallery.launch(intent);
+                    }
+                })
+                .show();
+    }
+
+    private void initializeCameraUri() {
+        File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                "profile_" + System.currentTimeMillis() + ".jpg");
+
+        profileImageUri = FileProvider.getUriForFile(
+                getActivity(),
+                getActivity().getApplicationContext().getPackageName() + ".provider",
+                photoFile
+        );
+    }
+
+
+    private final ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == getActivity().RESULT_OK) {
+                    startCrop(profileImageUri);
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> pickImageFromGallery = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == getActivity().RESULT_OK && result.getData() != null) {
+                    Uri selectedImageUri = result.getData().getData();
+                    startCrop(selectedImageUri);
+                }
+            }
+    );
+
+    private void startCrop(Uri sourceUri) {
+        try {
+            File croppedFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                    "cropped_" + System.currentTimeMillis() + ".jpg");
+            croppedImageUri = Uri.fromFile(croppedFile);
+
+            Intent cropIntent = new Intent("com.android.camera.action.CROP");
+            cropIntent.setDataAndType(sourceUri, "image/*");
+            cropIntent.putExtra("crop", "true");
+            cropIntent.putExtra("aspectX", 1);
+            cropIntent.putExtra("aspectY", 1);
+            cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, croppedImageUri);
+            cropIntent.putExtra("outputFormat", "JPEG");
+
+            cropImage.launch(cropIntent);
+        } catch (Exception e) {
+            Toast.makeText(getActivity(), "Crop function is not supported on this device", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private final ActivityResultLauncher<Intent> cropImage = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == getActivity().RESULT_OK) {
+                    ivProfilePicture.setImageURI(croppedImageUri);
+                    savePictureToFirebaseStorage();
+                }
+            }
+    );
+
+
+    private void savePictureToFirebaseStorage() {
+        if (croppedImageUri == null) return;
+
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        String uid = fbAuth.getCurrentUser().getUid();
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference("profile_images/" + uid + ".jpg");
+
+        storageRef.putFile(croppedImageUri)
+                .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+                    sharedPreferences.edit().putString("profileImageUri", uri.toString()).apply();
+                    ivProfilePicture.setImageURI(croppedImageUri);
+                }))
+                .addOnFailureListener(e -> Log.e("SaveImage", "Failed to upload image", e));
+    }
+
+    private void loadProfilePicture() {
+        sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        String savedUriString = sharedPreferences.getString("profileImageUri", null);
+
+        if (savedUriString != null) {
+            ivProfilePicture.setImageURI(Uri.parse(savedUriString));
+        } else {
+            ivProfilePicture.setImageResource(R.drawable.default_profile);
+        }
+    }
+
+    private void deletePhoto() {
+        if (profileImageUri == null) {
+            Toast.makeText(getActivity(), "No profile photo to delete", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        File file = new File(profileImageUri.getPath());
+        if (file.exists()) {
+            if (file.delete()) {
+                Log.d("DeletePhoto", "Photo deleted from local storage");
+            } else {
+                Log.e("DeletePhoto", "Failed to delete photo from local storage");
+            }
+        }
+
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        String uid = fbAuth.getCurrentUser().getUid();
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference("profile_images/" + uid + ".jpg");
+
+        storageRef.delete()
+                .addOnSuccessListener(aVoid -> Log.d("DeletePhoto", "Deleted from Firebase Storage"))
+                .addOnFailureListener(e -> Log.e("DeletePhoto", "Failed to delete from Firebase", e));
+
+        sharedPreferences.edit().remove("profileImageUri").apply();
+        ivProfilePicture.setImageResource(R.drawable.default_profile);
+        profileImageUri = null;
+    }
+
+
+    private void viewPhoto() {
+        if (croppedImageUri != null) {
+            Intent intent = new Intent(getActivity(), ViewPhotoActivity.class);
+            intent.putExtra("photoUri", croppedImageUri.toString());
+            startActivity(intent);
+        } else {
+            Toast.makeText(getContext(), "No profile photo to view.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadDetails() {
@@ -227,173 +357,5 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         view.setBackgroundColor(ContextCompat.getColor(activity, color));
     }
 
-    private void showImageOptions() {
-        String[] options = {"View Profile Picture", "Change Profile Picture", "Delete Profile Picture", "Cancel"};
-        new AlertDialog.Builder(getContext())
-                .setTitle("Set Profile Picture")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        viewPhoto();
-                    } else if (which == 1) {
-                        pickImage();
-                    }
-                    else if (which == 2) {
-                        deletePhoto();
-                    }
-                    else if (which == 3) {
-                        dialog.dismiss();
-                    }
-                })
-                .show();
-    }
-
-    private void deletePhoto() {
-        ivProfilePicture.setImageResource(R.drawable.default_profile);
-
-            sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            String base64Photo = sharedPreferences.getString("profileImage", null);
-            editor.remove("profileImage");
-            editor.remove("profileImageUri");
-            editor.apply();
-         if (base64Photo==null){
-            Toast.makeText(getActivity(), "No profile photo to delete", Toast.LENGTH_SHORT).show();
-        }
-
-    }
-
-    private void pickImage() {
-        String[] options = {"Take a photo", "Pick from gallery"};
-        new AlertDialog.Builder(getContext())
-                .setTitle("Change Photo")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) { // Camera option
-                        initializeCameraUri();
-                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
-                        takePhoto.launch(intent);
-                    } else if (which == 1) { // Gallery option
-                        pickImageFromGallery();
-                    }
-                })
-                .show();
-    }
-
-    private void viewPhoto() {
-        if (profileImageUri != null) {
-            Intent intent = new Intent(getActivity(), ViewPhotoActivity.class);
-            intent.putExtra("photoUri", profileImageUri.toString());
-            startActivity(intent);
-        } else {
-            Toast.makeText(getContext(), "No profile photo to view.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        if (profileImageUri != null) {
-                            ivProfilePicture.setImageURI(profileImageUri);
-//                            savePictureToSharedPreferencesAndFirebase();
-                        } else {
-                            Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_LONG).show();
-                    }
-                }
-            }
-    );
-
-
-
-//    private void savePictureToSharedPreferencesAndFirebase ()
-//    {
-//        byte[] photoBytes = convertImageToByteArray(profileImageUri);
-//        String base64Photo = Base64.encodeToString(photoBytes, Base64.DEFAULT);
-//        if (profileImageUri!=null)
-//        Toast.makeText(getActivity(), "hello", Toast.LENGTH_SHORT).show();
-//        sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-//        SharedPreferences.Editor editor = sharedPreferences.edit();
-//        editor.putString("profileImage", base64Photo);
-//        editor.putString("profileImageUri", profileImageUri.toString());
-//        editor.apply();
-//    try {
-//        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-//        String uid = fbAuth.getUid();
-//        FirebaseFirestore store = FirebaseFirestore.getInstance();
-//        Image profilePhoto = new Image(base64Photo, profileImageUri.toString());
-//        store.collection("images").document(uid).set(profilePhoto).addOnSuccessListener(new OnSuccessListener<Void>() {
-//            @Override
-//            public void onSuccess(Void unused) {
-//                Toast.makeText(getActivity(), "Photo saved", Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//}
-//    catch (Exception e)
-//    {
-//       Toast.makeText(getActivity(), "Failed to save photo", Toast.LENGTH_SHORT).show();
-//    }
-//
-//    }
-
-//    private void loadPictureFromSharedPreferencesAndFirebase ()
-//    {
-//
-//        sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-//         base64Photo = sharedPreferences.getString("profileImage", null);
-//         profileImageUri = Uri.parse(sharedPreferences.getString("profileImageUri", null));
-//        if (base64Photo == null) {
-//            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-//            String uid = fbAuth.getUid();
-//            FirebaseFirestore store = FirebaseFirestore.getInstance();
-//            store.collection("images").document(uid).get().addOnSuccessListener(documentSnapshot -> {
-//                Image profilePhoto = documentSnapshot.toObject(Image.class);
-//            if (profilePhoto.getProfileImage() != null && profilePhoto.getProfileImageUri() != null) {
-//                base64Photo = profilePhoto.getProfileImage();
-//                profileImageUri = Uri.parse(profilePhoto.getProfileImageUri());
-//                SharedPreferences.Editor editor = sharedPreferences.edit();
-//                editor.putString("profileImage", base64Photo);
-//                editor.putString("profileImageUri", profileImageUri.toString());
-//                editor.apply();
-//            }
-//            });
-//        }
-//        byte[] photoBytes = Base64.decode(base64Photo, Base64.DEFAULT);
-//        Bitmap bitmap = BitmapFactory.decodeByteArray(photoBytes, 0, photoBytes.length);
-//        ivProfilePicture.setImageBitmap(bitmap);
-//
-//    }
-
-    private void pickImageFromGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        pickPhotoFromGallery.launch(intent);
-    }
-
-    private void initializeCameraUri() {
-        try {
-            File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                    "profile_" + System.currentTimeMillis() + ".jpg");
-            profileImageUri = FileProvider.getUriForFile(getActivity(),
-                    getActivity().getApplicationContext().getPackageName() + ".provider", photoFile);
-        } catch (Exception e) {
-            profileImageUri = null;
-        }
-    }
-
-    private byte[] convertImageToByteArray(Uri imageUri) {
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            return outputStream.toByteArray();
-        } catch (Exception e) {
-            Toast.makeText(getActivity(), "Failed to convert image.", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-    }
 
 }

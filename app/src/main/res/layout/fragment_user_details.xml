@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".UserDetailsFragment"
+    >
+
+<LinearLayout
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp"
+    >
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="User Details"
+        android:textColor="@color/black"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/ivProfilePicture"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/default_profile"
+        android:layout_marginBottom="16dp"
+        android:scaleType="centerCrop"
+        android:background="@drawable/circle_background"
+        android:contentDescription="Profile picture"
+        android:clickable="true"
+        android:focusable="true"
+        android:clipToOutline="true"
+        />
+
+    <EditText
+        android:id="@+id/etDetailsEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your email"
+        android:enabled="false"
+        android:textColor="@color/black"
+        android:textColorHint="#4a4a4a"
+        android:padding="12dp"
+        android:background="@drawable/edittext_bg"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"/>
+
+    <EditText
+        android:id="@+id/etDetailsFname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your first name"
+        android:textColor="@color/black"
+        android:textColorHint="#4a4a4a"
+        android:padding="12dp"
+        android:background="@drawable/edittext_bg"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"/>
+
+    <EditText
+        android:id="@+id/etDetailsLname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your last name"
+        android:textColor="@color/black"
+        android:textColorHint="#4a4a4a"
+        android:padding="12dp"
+        android:background="@drawable/edittext_bg"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"/>
+
+    <EditText
+        android:id="@+id/etDetailsPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your phone number"
+        android:inputType="phone"
+        android:textColor="@color/black"
+        android:textColorHint="#4a4a4a"
+        android:padding="12dp"
+        android:background="@drawable/edittext_bg"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"/>
+
+    <EditText
+        android:id="@+id/etDetailsYOB"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your year of birth"
+        android:inputType="number"
+        android:textColor="@color/black"
+        android:textColorHint="#4a4a4a"
+        android:padding="12dp"
+        android:background="@drawable/edittext_bg"
+        android:layout_marginBottom="24dp"
+        android:gravity="center_vertical"/>
+
+    <Button
+        android:id="@+id/btnSaveDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save Changes"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:backgroundTint="@color/button"
+        android:padding="12dp"
+        android:textSize="16dp"
+        android:layout_marginBottom="16dp"
+/>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    >
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Logout"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:layout_weight="1"
+        android:layout_marginEnd="12dp"
+        android:backgroundTint="@color/button"
+        android:padding="12dp"
+        android:textSize="16dp"
+        android:layout_marginBottom="16dp"
+/>
+
+    <Button
+        android:id="@+id/btnDeleteAccount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delete Account"
+        android:textColor="@color/black"
+        android:layout_weight="1"
+        android:textStyle="bold"
+        android:backgroundTint="@color/button"
+        android:padding="12dp"
+        android:textSize="16dp"
+/>
+</LinearLayout>
+
+</LinearLayout>
+</ScrollView>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_home"
+        android:title="Home"
+        android:icon="@drawable/ic_baseline_home_24"
+        />
+
+    <item
+        android:id="@+id/menu_paint"
+        android:title="Paint"
+        android:icon="@drawable/ic_baseline_color_lens_24"
+        />
+
+    <item
+        android:id="@+id/menu_userdetails"
+        android:title="User Details"
+        android:icon="@drawable/ic_baseline_person_24"
+        />
+
+    <item
+        android:id="@+id/menu_settings"
+        android:title="Settings"
+        android:icon="@drawable/ic_baseline_settings_24"
+        />
+
+
+</menu>

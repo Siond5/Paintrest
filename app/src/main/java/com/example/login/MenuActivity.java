@@ -97,21 +97,21 @@ public class MenuActivity extends AppCompatActivity {
                 checkLoadingComplete();
             });
 
-            store.collection("images").document(uid).get().addOnSuccessListener(documentSnapshot -> {
-                image = documentSnapshot.toObject(Image.class);
-                SharedPreferences.Editor editor = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE).edit();
-
-                if (image != null) {
-                    editor.putString("profileImage", image.getProfileImage());
-                    editor.putString("profileImageUri", image.getProfileImageUri());
-                } else {
-                    editor.putString("profileImage", "");
-                    editor.putString("profileImageUri", "");
-                }
-                editor.apply();
-                isImageLoaded = true;
-                checkLoadingComplete();
-            });
+//            store.collection("images").document(uid).get().addOnSuccessListener(documentSnapshot -> {
+//                image = documentSnapshot.toObject(Image.class);
+//                SharedPreferences.Editor editor = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE).edit();
+//
+//                if (image != null) {
+//                    editor.putString("profileImage", image.getProfileImage());
+//                    editor.putString("profileImageUri", image.getProfileImageUri());
+//                } else {
+//                    editor.putString("profileImage", "");
+//                    editor.putString("profileImageUri", "");
+//                }
+//                editor.apply();
+//                isImageLoaded = true;
+//                checkLoadingComplete();
+//            });
 
         } catch (Exception e) {
             Toast.makeText(activity, "Failed to load data", Toast.LENGTH_SHORT).show();
@@ -119,7 +119,8 @@ public class MenuActivity extends AppCompatActivity {
     }
 
     private void checkLoadingComplete() {
-        if (isUserLoaded && isColorLoaded && isImageLoaded) {
+//        && isImageLoaded
+        if (isUserLoaded && isColorLoaded) {
             progressBar.setVisibility(View.GONE);
             bottomNavigationView.setVisibility(View.VISIBLE);
             createFragment(new HomeFragment());

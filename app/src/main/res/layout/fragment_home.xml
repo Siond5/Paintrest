@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Profile Image -->
+    <ImageView
+        android:id="@+id/imageViewProfile"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="center"
+        android:src="@drawable/default_profile"
+        android:contentDescription="Profile Image" />
+
+    <!-- User Info -->
+    <TextView
+        android:id="@+id/textViewFirstName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="First Name"
+        style="@style/BoldText"
+
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/textViewLastName"
+        style="@style/BoldText"
+
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Last Name"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/textViewPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Phone"
+        style="@style/BoldText"
+        android:textSize="18sp" />
+
+
+    <TextView
+        android:id="@+id/textViewYob"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Year of Birth"
+        style="@style/BoldText"
+        android:textSize="18sp" />
+
+</LinearLayout>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    tools:context=".SignupActivity"
+    android:background="#6a82b8"
+    >
+
+
+<TextView
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/BoldText"
+        android:text="Create your account"
+        android:textSize="30dp" />
+
+    <EditText
+        android:inputType="textEmailAddress"
+        android:textColorHint="@color/black"
+        android:id="@+id/etSignupEmail"
+        android:textColor="@color/black"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:hint="Enter your email" />
+
+    <EditText
+        android:inputType="textPassword"
+        android:id="@+id/etSignupPassword"
+        android:textColorHint="@color/black"
+        android:textColor="@color/black"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:hint="Enter your password" />
+
+    <EditText
+        android:inputType="text"
+        android:id="@+id/etSignupFname"
+        android:textColor="@color/black"
+        android:textColorHint="@color/black"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:hint="Enter your first name" />
+
+    <EditText
+        android:inputType="text"
+        android:id="@+id/etSignupLname"
+        android:textColor="@color/black"
+        android:layout_width="250dp"
+        android:textColorHint="@color/black"
+        android:layout_height="wrap_content"
+        android:hint="Enter your last name" />
+
+    <EditText
+        android:inputType="phone"
+        android:textColor="@color/black"
+        android:id="@+id/etSignupPhone"
+        android:textColorHint="@color/black"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:maxLength="10"
+        android:hint="Enter your phone number" />
+
+    <EditText
+        android:inputType="number"
+        android:textColor="@color/black"
+        android:id="@+id/etSignupYOB"
+        android:layout_width="250dp"
+        android:textColorHint="@color/black"
+        android:layout_height="wrap_content"
+        android:maxLength="4"
+        android:hint="Enter your year of birth" />
+
+    <Button
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:text="Sign up"
+        style="@style/BoldText"
+        android:backgroundTint="#674675"
+        android:id="@+id/btnSignup"
+        android:layout_margin="10dp"
+        android:textSize="18dp"/>
+
+    <Button
+        android:id="@+id/goSignin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:text="Already have an account?"
+        style="@style/BoldText"
+        android:backgroundTint="#674675"
+        />
+</LinearLayout>

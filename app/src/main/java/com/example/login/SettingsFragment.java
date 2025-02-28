@@ -68,50 +68,60 @@ public class SettingsFragment extends Fragment {
     }
 
     private void changeColorBasedOnSelection(int position) {
-        int color;
+        int color=getContextColor(R.color.red);
         switch (position) {
             case 0:
-                color = R.color.Default;
+                color =getContextColor( R.color.Default);
                 break;
             case 1:
-                color = R.color.white;
+                color = getContextColor(R.color.white);
                 break;
             case 2:
-                color = R.color.red;
+                color = getContextColor(R.color.red);
                 break;
             case 3:
-                color = R.color.orange;
+                color = getContextColor(R.color.orange);
                 break;
             case 4:
-                color = R.color.yellow;
+                color = getContextColor(R.color.yellow);
                 break;
             case 5:
-                color = R.color.green;
+                color = getContextColor(R.color.green);
                 break;
             case 6:
-                color = R.color.blue;
+                color = getContextColor(R.color.blue);
                 break;
                 case 7:
-                color = R.color.azure;
+                color = getContextColor(R.color.azure);
                 break;
             case 8:
-                color = R.color.purple;
+                color = getContextColor(R.color.purple);
                 break;
             case 9:
-                color = R.color.pink;
+                color = getContextColor(R.color.pink);
+                break;
+            case 10:
+                ColorPickerDialog.show(getActivity(), color, selectedColor -> {
+                    setBackgroundColor(selectedColor);
+                });
                 break;
             default:
                 color = R.color.Default;
         }
         ColorDrawable colorDrawable = (ColorDrawable) getView().getBackground();
         int color1 =  colorDrawable.getColor();
-        if (ContextCompat.getColor(getActivity(), color) != color1) {
+        if (color != color1) {
             setBackgroundColor(color);
         }
     }
 
+    public int getContextColor(int color)
+    {
+        return ContextCompat.getColor(getActivity(), color);
+    }
+
     public void setBackgroundColor(int color) {
-        getView().setBackgroundColor(ContextCompat.getColor(getActivity(), color));
+        getView().setBackgroundColor(color);
         SharedPreferences.Editor editor = sp.edit();
         editor.putInt("color", color);
         editor.apply();
@@ -132,18 +142,21 @@ public class SettingsFragment extends Fragment {
     }
 
     private static void changeSelectionBasedOnColor( View view, Activity activity) {
+        boolean flag= false;
         ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
         int color =  colorDrawable.getColor();
         Spinner set_color = view.findViewById(R.id.set_color);
         int[] colorArray = {R.color.Default,R.color.white, R.color.red, R.color.orange, R.color.yellow, R.color.green, R.color.blue, R.color.azure, R.color.purple, R.color.pink};
 
-        for (int i = 0; i < colorArray.length; i++) {
+        for (int i = 0; i < colorArray.length&&flag==false; i++) {
             if (color == ContextCompat.getColor(activity, colorArray[i])) {
                 set_color.setSelection(i);
+                flag = true;
                 return;
             }
         }
-
+        if (flag==false)
+            set_color.setSelection(10);
         set_color.setSelection(0);
     }
 }

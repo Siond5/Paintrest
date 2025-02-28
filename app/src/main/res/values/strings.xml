@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">Paintrest</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string-array name="color_array">
+        <item>Default</item>
+        <item>White</item>
+        <item>Red</item>
+        <item>Orange</item>
+        <item>Yellow</item>
+        <item>green</item>
+        <item>Blue</item>
+        <item>Azure</item>
+        <item>Purple</item>
+        <item>Pink</item>
+        <item>Custom</item>
+    </string-array>
+
+
+</resources>
+
+
+
