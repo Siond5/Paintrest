@@ -16,19 +16,16 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
     public class SettingsFragment extends Fragment {
 
         Spinner set_color;
         SharedPreferences sp;
-        boolean isSettingSelection = false;  // Flag to prevent triggering onItemSelected
+        boolean isSettingSelection = false;
 
         public SettingsFragment() {
-            // Required empty public constructor
         }
 
         @Override
@@ -49,15 +46,15 @@ import com.google.firebase.firestore.FirebaseFirestore;
             set_color.setAdapter(adapter);
 
             sp = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-            loadColor(view); // This will load the background color
+            loadColor(view);
 
-            // Set the spinner selection based on the current background color
             changeSelectionBasedOnColor(view, getActivity());
+
 
             set_color.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                    // Don't trigger any action if we're setting the selection programmatically
+
                     if (isSettingSelection) {
                         isSettingSelection = false;
                         return;
@@ -75,11 +72,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
         }
 
         private void changeSelectionBasedOnColor(View view, Activity activity) {
-            // Get the current background color of the view
             ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
             int currentColor = colorDrawable.getColor();
 
-            // Define an array of predefined colors to compare against
             int[] colorArray = {
                     R.color.Default,
                     R.color.white,
@@ -93,17 +88,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
                     R.color.pink
             };
 
-            // Loop through the color array and check for a match
             for (int i = 0; i < colorArray.length; i++) {
                 if (currentColor == ContextCompat.getColor(activity, colorArray[i])) {
-                    // Temporarily disable the listener to prevent it from being triggered
                     isSettingSelection = true;
                     set_color.setSelection(i);
-                    return; // Exit after selecting the matching color
+                    return;
                 }
             }
 
-            // If no match is found, you can set a default value (e.g., the "color picker" option)
             isSettingSelection = true;
             set_color.setSelection(10);
         }
@@ -142,16 +134,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
                     color = getContextColor(R.color.pink);
                     break;
                 case 10:
-                    // Open color picker dialog if option 10 is selected
                     ColorPickerDialog.show(getActivity(), color, selectedColor -> {
                         setBackgroundColor(selectedColor);
                     });
-                    return; // Ensure no further actions are taken for color picker
+                    return;
                 default:
                     color = R.color.Default;
             }
 
-            // Only change the background if the color is different and it's not the color picker
             ColorDrawable colorDrawable = (ColorDrawable) getView().getBackground();
             int currentColor = colorDrawable.getColor();
             if (color != currentColor && position != 10) {

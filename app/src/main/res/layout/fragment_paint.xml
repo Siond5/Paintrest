@@ -8,21 +8,33 @@
         android:id="@+id/canvas_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/button_container"
-        android:layout_marginBottom="-8dp"
+        android:layout_above="@+id/PaintSettings"
         android:background="@drawable/canvas_bg"
+        />
 
+    <Button
+        android:id="@+id/PaintSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Paint settings"
+        android:textSize="16dp"
+        style="@style/BoldText"
+        android:layout_above="@+id/button_container"
+        android:backgroundTint="@color/button"
+        android:layout_marginEnd="12dp"
+        android:layout_marginStart="12dp"
         />
 
     <LinearLayout
         android:id="@+id/button_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="-15dp"
+        android:layout_marginBottom="-5dp"
         android:layout_alignParentBottom="true"
         android:gravity="center"
         android:padding="10dp"
         >
-
 
         <Button
             android:id="@+id/btn_clear"
