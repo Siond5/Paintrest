@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.os.Build;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,46 +16,63 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
-import java.time.LocalDate;
-import java.util.Date;
 
 public class PaintFragment extends Fragment {
 
     private PaintView paintView;
-    private SharedPreferences sp;
+    private static Bitmap savedBitmap;
 
     public PaintFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_paint, container, false);
-
+        loadColor(getActivity(), view);
         FrameLayout canvasContainer = view.findViewById(R.id.canvas_container);
         paintView = new PaintView(getActivity());
         canvasContainer.addView(paintView);
 
         Button btnClear = view.findViewById(R.id.btn_clear);
         Button btnPublish = view.findViewById(R.id.btn_publish);
+        Button paintSettings = view.findViewById(R.id.paintSettings);
 
-        btnClear.setOnClickListener(v -> paintView.clearCanvas());
+        btnClear.setOnClickListener(v -> {
+            paintView.clearCanvas();
+            savedBitmap = null;
+        });
+
         btnPublish.setOnClickListener(v -> publishCanvas());
+        paintSettings.setOnClickListener(v -> openSettings());
 
-        loadColor(getActivity(), view);
+        restoreCanvas();
         return view;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        saveCanvas();
+    }
+
+    private void saveCanvas() {
+        savedBitmap = Bitmap.createBitmap(paintView.getWidth(), paintView.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(savedBitmap);
+        paintView.draw(canvas);
+    }
+
+    private void restoreCanvas() {
+        if (savedBitmap != null) {
+            paintView.setBitmap(savedBitmap);
+        }
     }
 
     private void publishCanvas() {
@@ -68,8 +87,7 @@ public class PaintFragment extends Fragment {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {
             Toast.makeText(getActivity(), "You are not logged in", Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(getActivity(), MainActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(getActivity(), MainActivity.class));
             return;
         }
 
@@ -78,16 +96,32 @@ public class PaintFragment extends Fragment {
         StorageReference canvasRef = storageRef.child("paintings").child(uid).child(filename);
 
         canvasRef.putBytes(data)
-                .addOnSuccessListener(taskSnapshot -> {
-                    Toast.makeText(getActivity(), "The painting has been successfully Published!", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getActivity(), "Failed to Publish the painting", Toast.LENGTH_SHORT).show();
-                });
+                .addOnSuccessListener(taskSnapshot ->
+                        Toast.makeText(getActivity(), "The painting has been successfully Published!", Toast.LENGTH_SHORT).show()
+                )
+                .addOnFailureListener(e ->
+                        Toast.makeText(getActivity(), "Failed to Publish the painting", Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    private void openSettings() {
+        PaintSettingsDialogFragment.show(
+                getContext(),
+                paintView.getBrushColor(),
+                (int) paintView.getBrushSize(),
+                paintView.getCurrentTool(),
+                (color, size, tool) -> {
+                    paintView.setBrushColor(color);
+                    paintView.setBrushSize(size);
+                    paintView.setCurrentTool(tool);
+                }
+        );
     }
 
     public void loadColor(Activity activity, View view){
-        sp = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        int color = sp.getInt("color", R.color.Default);
-        view.setBackgroundColor(color);    }
+        SharedPreferences sharedPreferences;
+        sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        int color = sharedPreferences.getInt("color", R.color.Default);
+        view.setBackgroundColor(color);
+    }
 }

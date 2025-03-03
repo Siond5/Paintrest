@@ -8,12 +8,12 @@
         android:id="@+id/canvas_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/PaintSettings"
+        android:layout_above="@+id/paintSettings"
         android:background="@drawable/canvas_bg"
         />
 
     <Button
-        android:id="@+id/PaintSettings"
+        android:id="@+id/paintSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Paint settings"
