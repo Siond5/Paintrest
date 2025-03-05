@@ -1,19 +1,12 @@
 package com.example.login;
 
 import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.content.FileProvider;
-import androidx.fragment.app.Fragment;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -24,17 +17,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import java.io.File;
-import android.app.Activity;
-import androidx.core.content.ContextCompat;
-
-import androidx.annotation.NonNull;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 public class UserDetailsFragment extends Fragment implements View.OnClickListener {
     private EditText etDetailsEmail, etDetailsFirstName, etDetailsLastName, etDetailsPhone, etDetailsYOB;
@@ -226,7 +218,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             result -> {
                 if (result.getResultCode() == getActivity().RESULT_OK && result.getData() != null) {
                     Uri selectedImageUri = result.getData().getData();
-                    startCrop(selectedImageUri);
+                   startCrop(selectedImageUri);
                 }
             }
     );
@@ -354,7 +346,8 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     public void loadColor(Activity activity, View view){
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("color", R.color.Default);
-        view.setBackgroundColor(color);    }
+        view.setBackgroundColor(color);
+    }
 
 
 }

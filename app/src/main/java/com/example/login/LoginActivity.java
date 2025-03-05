@@ -1,11 +1,13 @@
 package com.example.login;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -22,7 +24,9 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
     EditText etLoginEmail, etLoginPassword;
-    Button btnLogin ,goSignup;
+    Button btnLogin, goSignup;
+    ImageButton btnTogglePassword;
+    boolean isPasswordVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,32 +41,55 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         findViews();
         btnLogin.setOnClickListener(this);
         goSignup.setOnClickListener(this);
+        btnTogglePassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                togglePasswordVisibility();
+            }
+        });
     }
 
     private void findViews() {
-        etLoginEmail=findViewById(R.id.etLoginEmail);
-        etLoginPassword=findViewById(R.id.etLoginPassword);
-        btnLogin=findViewById(R.id.btnLogin);
-        goSignup=findViewById(R.id.goSignup);
+        etLoginEmail = findViewById(R.id.etLoginEmail);
+        etLoginPassword = findViewById(R.id.etLoginPassword);
+        btnLogin = findViewById(R.id.btnLogin);
+        goSignup = findViewById(R.id.goSignup);
+        btnTogglePassword = findViewById(R.id.btnTogglePassword);
+    }
+
+    private void togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            etLoginPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            btnTogglePassword.setImageResource(R.drawable.ic_visibility_off);
+            etLoginPassword.setTypeface(Typeface.DEFAULT); // Ensures the default font is used
+
+        } else {
+            etLoginPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            btnTogglePassword.setImageResource(R.drawable.ic_visibility);
+            etLoginPassword.setTypeface(Typeface.DEFAULT); // Ensures the default font is used
+
+        }
+        etLoginPassword.setSelection(etLoginPassword.getText().length());
+        isPasswordVisible = !isPasswordVisible;
     }
 
     @Override
     public void onClick(View view) {
-        if(view==goSignup)
-        {
-            Intent intent=new Intent(LoginActivity.this, SignupActivity.class);
+        if (view == goSignup) {
+            Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
             startActivity(intent);
-        }
-        else if (view==btnLogin){
-            String email=etLoginEmail.getText().toString();
-            String pass=etLoginPassword.getText().toString();
-            FirebaseAuth fbAuth=FirebaseAuth.getInstance();
-            fbAuth.signInWithEmailAndPassword(email,pass)
+        } else if (view == btnLogin) {
+            String email = etLoginEmail.getText().toString();
+            String pass = etLoginPassword.getText().toString();
+            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+            fbAuth.signInWithEmailAndPassword(email, pass)
                     .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
                         @Override
                         public void onSuccess(AuthResult authResult) {
-                            Intent intent=new Intent(LoginActivity.this, MenuActivity.class);
+                            Intent intent = new Intent(LoginActivity.this, MenuActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(intent);
+                            finish();
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                         @Override
@@ -70,8 +97,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                             Toast.makeText(LoginActivity.this, "ERROR: email or password incorrect", Toast.LENGTH_SHORT).show();
                         }
                     });
-
         }
     }
-
 }

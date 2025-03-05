@@ -8,23 +8,55 @@
         android:id="@+id/canvas_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/paintSettings"
+        android:layout_above="@+id/paintSettingsLayout"
         android:background="@drawable/canvas_bg"
         />
-
-    <Button
-        android:id="@+id/paintSettings"
+    <LinearLayout
+        android:id="@+id/paintSettingsLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Paint settings"
-        android:textSize="16dp"
-        style="@style/BoldText"
+        android:layout_marginTop="-10dp"
+        android:layout_marginBottom="-10dp"
         android:layout_above="@+id/button_container"
+        android:gravity="center"
+        android:padding="10dp"
+        >
+    <Button
+        android:id="@+id/btn_undo"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Undo"
+        android:textSize="16dp"
+        android:visibility="gone"
+        style="@style/BoldText"
         android:backgroundTint="@color/button"
-        android:layout_marginEnd="12dp"
-        android:layout_marginStart="12dp"
         />
 
+        <Button
+            android:id="@+id/btn_redo"
+            android:text="Redo️️"
+            android:visibility="gone"
+
+            android:layout_width="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:layout_marginStart="5dp"
+            android:layout_height="wrap_content"
+            android:textSize="16dp"
+            style="@style/BoldText"
+            android:backgroundTint="@color/button"
+            />
+
+        <Button
+            android:id="@+id/paintSettings"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Paint settings"
+            android:textSize="16dp"
+            style="@style/BoldText"
+            android:backgroundTint="@color/button"
+            />
+    </LinearLayout>
     <LinearLayout
         android:id="@+id/button_container"
         android:layout_width="match_parent"
@@ -38,8 +70,8 @@
 
         <Button
             android:id="@+id/btn_clear"
-            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_width="0dp"
             android:layout_weight="1"
             android:text="Clear"
             android:textSize="16dp"
@@ -49,8 +81,8 @@
 
         <Button
             android:id="@+id/btn_publish"
-            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_width="0dp"
             android:layout_weight="1"
             style="@style/BoldText"
             android:textSize="16dp"

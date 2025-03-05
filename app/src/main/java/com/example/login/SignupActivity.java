@@ -1,10 +1,13 @@
 package com.example.login;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -26,6 +29,8 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
     EditText etSignupEmail, etSignupPassword, etSignupFname, etSignupLname, etSignupPhone, etSignupYOB;
     Button btnSignup, goSignin;
     FirebaseAuth fbAuth;
+    ImageButton btnTogglePassword;
+    boolean isPasswordVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +46,14 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         btnSignup.setOnClickListener(this);
         goSignin.setOnClickListener(this);
         fbAuth = FirebaseAuth.getInstance();
+
+        btnTogglePassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                togglePasswordVisibility();
+            }
+        });
+
     }
 
     private void findViews() {
@@ -52,7 +65,26 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         etSignupYOB = findViewById(R.id.etSignupYOB);
         btnSignup = findViewById(R.id.btnSignup);
         goSignin = findViewById(R.id.goSignin);
+        btnTogglePassword = findViewById(R.id.btnTogglePassword);
+
     }
+
+    private void togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            etSignupPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            btnTogglePassword.setImageResource(R.drawable.ic_visibility_off);
+            etSignupPassword.setTypeface(Typeface.DEFAULT); // Ensures the default font is used
+
+        } else {
+            etSignupPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            btnTogglePassword.setImageResource(R.drawable.ic_visibility);
+            etSignupPassword.setTypeface(Typeface.DEFAULT); // Ensures the default font is used
+
+        }
+        etSignupPassword.setSelection(etSignupPassword.getText().length());
+        isPasswordVisible = !isPasswordVisible;
+    }
+
 
     @Override
     public void onClick(View view) {

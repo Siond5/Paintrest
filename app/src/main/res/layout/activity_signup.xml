@@ -29,14 +29,30 @@
         android:layout_height="wrap_content"
         android:hint="Enter your email" />
 
-    <EditText
-        android:inputType="textPassword"
-        android:id="@+id/etSignupPassword"
-        android:textColorHint="@color/black"
-        android:textColor="@color/black"
+    <RelativeLayout
         android:layout_width="250dp"
         android:layout_height="wrap_content"
-        android:hint="Enter your password" />
+        >
+
+        <EditText
+            android:inputType="textPassword"
+            android:id="@+id/etSignupPassword"
+            android:textColorHint="@color/black"
+            android:textColor="@color/black"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:hint="Enter your password" />
+
+        <ImageButton
+            android:id="@+id/btnTogglePassword"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_visibility_off"
+            android:contentDescription="Toggle password visibility" />
+    </RelativeLayout>
 
     <EditText
         android:inputType="text"
