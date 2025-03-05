@@ -100,7 +100,7 @@
         android:layout_height="wrap_content"
         android:text="Sign up"
         style="@style/BoldText"
-        android:backgroundTint="#674675"
+        android:backgroundTint="@color/button"
         android:id="@+id/btnSignup"
         android:layout_margin="10dp"
         android:textSize="18dp"/>
@@ -112,6 +112,6 @@
         android:layout_margin="5dp"
         android:text="Already have an account?"
         style="@style/BoldText"
-        android:backgroundTint="#674675"
+        android:backgroundTint="@color/button"
         />
 </LinearLayout>

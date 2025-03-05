@@ -1,9 +1,11 @@
 package com.example.login;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,10 +23,11 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
     EditText etLoginEmail, etLoginPassword;
-    Button btnLogin, goSignup;
+    Button btnLogin, goSignup, btnForgotPassword;
     ImageButton btnTogglePassword;
     boolean isPasswordVisible = false;
 
@@ -41,12 +44,14 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         findViews();
         btnLogin.setOnClickListener(this);
         goSignup.setOnClickListener(this);
+        btnForgotPassword.setOnClickListener(this);
         btnTogglePassword.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 togglePasswordVisibility();
             }
         });
+
     }
 
     private void findViews() {
@@ -55,6 +60,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         btnLogin = findViewById(R.id.btnLogin);
         goSignup = findViewById(R.id.goSignup);
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
+        btnForgotPassword = findViewById(R.id.btnForgotPassword);
     }
 
     private void togglePasswordVisibility() {
@@ -78,7 +84,9 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         if (view == goSignup) {
             Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
             startActivity(intent);
-        } else if (view == btnLogin) {
+        }
+
+        else if (view == btnLogin) {
             String email = etLoginEmail.getText().toString().trim();
             String pass = etLoginPassword.getText().toString().trim();
 
@@ -106,5 +114,25 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                     });
         }
 
+        else if (view == btnForgotPassword) {
+            LayoutInflater inflater = LayoutInflater.from(LoginActivity.this);
+            View dialogView = inflater.inflate(R.layout.dialog_forgot_password, null);
+            EditText inputEmail = dialogView.findViewById(R.id.etEmail);
+            inputEmail.setText(etLoginEmail.getText().toString());
+            new AlertDialog.Builder(LoginActivity.this)
+                    .setTitle("Reset Password")
+                    .setMessage("Enter your email here to receive a password reset link")
+                    .setView(dialogView)
+
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+                        fbAuth.sendPasswordResetEmail(inputEmail.getText().toString());
+                        Toast.makeText(LoginActivity.this, "Password reset link was sent to your email", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
+        }
     }
 }

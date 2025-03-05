@@ -13,6 +13,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="15dp"
         android:text="Sign in to your account"
         android:textSize="25dp"
         style="@style/BoldText" />
@@ -29,7 +30,7 @@
     <RelativeLayout
         android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp">
+        android:layout_marginBottom="30dp">
 
         <EditText
             android:id="@+id/etLoginPassword"
@@ -51,22 +52,44 @@
             android:src="@drawable/ic_visibility_off"
             android:contentDescription="Toggle password visibility" />
     </RelativeLayout>
-
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    >
     <Button
-        android:layout_width="150dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
         android:text="Sign in"
         style="@style/BoldText"
-        android:backgroundTint="#674675"
-        android:layout_margin="10dp"
+        android:backgroundTint="@color/button"
         android:id="@+id/btnLogin"
-        android:textSize="18dp"/>
+        android:textSize="18dp"
+        android:layout_above="@id/etLoginPassword"
+        />
+
+    <Button
+        android:id="@+id/btnForgotPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:text="Forgot Password?"
+        style="@style/BoldText"
+        android:backgroundTint="@color/button"
+        android:textSize="16dp"
+        android:layout_above="@id/goSignup"
+        />
 
     <Button
         android:id="@+id/goSignup"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Doesn't have an account?"
-        android:backgroundTint="#674675"
-        style="@style/BoldText"/>
+        android:backgroundTint="@color/button"
+        style="@style/BoldText"
+        android:textSize="16dp"
+        />
+</LinearLayout>
 </LinearLayout>

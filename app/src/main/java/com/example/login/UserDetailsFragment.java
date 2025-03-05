@@ -32,7 +32,7 @@ import java.io.File;
 
 public class UserDetailsFragment extends Fragment implements View.OnClickListener {
     private EditText etDetailsEmail, etDetailsFirstName, etDetailsLastName, etDetailsPhone, etDetailsYOB;
-    private Button btnDetailsSave, btnLogout, btnDeleteAccount;
+    private Button btnDetailsSave, btnLogout, btnDeleteAccount, btnChangePassword;
     private ImageView ivProfilePicture;
     private Uri profileImageUri, croppedImageUri;
     private SharedPreferences sharedPreferences;
@@ -54,6 +54,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnDetailsSave = view.findViewById(R.id.btnSaveDetails);
         btnLogout = view.findViewById(R.id.btnLogout);
         btnDeleteAccount = view.findViewById(R.id.btnDeleteAccount);
+        btnChangePassword = view.findViewById(R.id.btnChangePassword);
 
         loadColor(getActivity(), view);
         loadDetails();
@@ -63,6 +64,10 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnLogout.setOnClickListener(this);
         btnDeleteAccount.setOnClickListener(this);
         ivProfilePicture.setOnClickListener(v -> showImageOptions());
+        btnChangePassword.setOnClickListener(this);
+
+
+
         setUpTextWatchers();
         return view;
     }
@@ -187,6 +192,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
             }
     }
+
     else if (view == btnLogout) {
         Intent intent = new Intent(this.getActivity(), MainActivity.class);
         startActivity(intent);
@@ -194,6 +200,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         fbAuth.signOut();
         getActivity().finish();
     }
+
     else if (view == btnDeleteAccount) {
         new AlertDialog.Builder(getActivity())
                 .setTitle("Delete Account")
@@ -225,6 +232,12 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                     dialog.dismiss();
                 })
                 .show();
+    }
+
+    else if (view == btnChangePassword) {
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        fbAuth.sendPasswordResetEmail(fbAuth.getCurrentUser().getEmail());
+        Toast.makeText(getActivity(), "Password reset link was sent to your email", Toast.LENGTH_SHORT).show();
     }
 
     }
