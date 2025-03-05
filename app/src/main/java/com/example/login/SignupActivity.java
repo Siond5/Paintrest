@@ -78,9 +78,11 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         if (isPasswordVisible) {
             etSignupPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             btnTogglePassword.setImageResource(R.drawable.ic_visibility_off);
+            etSignupPassword.setTypeface(Typeface.DEFAULT);
         } else {
             etSignupPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
             btnTogglePassword.setImageResource(R.drawable.ic_visibility);
+            etSignupPassword.setTypeface(Typeface.DEFAULT);
         }
         etSignupPassword.setSelection(etSignupPassword.getText().length());
         isPasswordVisible = !isPasswordVisible;

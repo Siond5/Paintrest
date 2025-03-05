@@ -153,7 +153,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
     @Override
     public void onClick(View view) {
-        if (view == btnDetailsSave) {
+    if (view == btnDetailsSave) {
 
             String firstName = etDetailsFirstName.getText().toString();
             String lastName = etDetailsLastName.getText().toString();
@@ -185,37 +185,47 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
                 store.collection("users").document(uid).set(user);
                 Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
-            } else if (view == btnLogout) {
-                Intent intent = new Intent(this.getActivity(), MainActivity.class);
-                startActivity(intent);
-                FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-                fbAuth.signOut();
-                getActivity().finish();
-            } else if (view == btnDeleteAccount) {
-                FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-                String uid = fbAuth.getUid();
-                FirebaseFirestore store = FirebaseFirestore.getInstance();
-                try {
-                    store.collection("users").document(uid).delete();
-                    store.collection("colors").document(uid).delete();
-                    fbAuth.getCurrentUser().delete()
-                            .addOnCompleteListener(task -> {
-                                if (task.isSuccessful()) {
-                                    Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+            }
+    }
+    else if (view == btnLogout) {
+        Intent intent = new Intent(this.getActivity(), MainActivity.class);
+        startActivity(intent);
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        fbAuth.signOut();
+        getActivity().finish();
+    }
+    else if (view == btnDeleteAccount) {
+        new AlertDialog.Builder(getActivity())
+                .setTitle("Delete Account")
+                .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    // Proceed with account deletion
+                    FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+                    String uid = fbAuth.getUid();
+                    FirebaseFirestore store = FirebaseFirestore.getInstance();
+                    try {
+                        store.collection("users").document(uid).delete();
+                        store.collection("colors").document(uid).delete();
+                        fbAuth.getCurrentUser().delete()
+                                .addOnCompleteListener(task -> {
+                                    if (task.isSuccessful()) {
+                                        Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
 
-                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                    startActivity(intent);
-                                    getActivity().finish();
-                                }
-                            });
-                } catch (Exception e) {
-                    Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
-                }
-            }
-            else {
-                Toast.makeText(getActivity(), "Please fix the errors above before submitting.", Toast.LENGTH_SHORT).show();
-            }
-        }
+                                        Intent intent = new Intent(getActivity(), MainActivity.class);
+                                        startActivity(intent);
+                                        getActivity().finish();
+                                    }
+                                });
+                    } catch (Exception e) {
+                        Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    // Do nothing, just dismiss the dialog
+                    dialog.dismiss();
+                })
+                .show();
+    }
 
     }
 
