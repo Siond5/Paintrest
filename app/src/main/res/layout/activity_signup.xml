@@ -29,9 +29,11 @@
         android:layout_height="wrap_content"
         android:hint="Enter your email" />
 
-    <RelativeLayout
-        android:layout_width="250dp"
+    <LinearLayout
+        android:id="@+id/passwordLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         >
 
         <EditText
@@ -39,6 +41,7 @@
             android:id="@+id/etSignupPassword"
             android:textColorHint="@color/black"
             android:textColor="@color/black"
+            android:layout_marginStart="30dp"
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:hint="Enter your password" />
@@ -52,7 +55,7 @@
             android:background="@android:color/transparent"
             android:src="@drawable/ic_visibility_off"
             android:contentDescription="Toggle password visibility" />
-    </RelativeLayout>
+    </LinearLayout>
 
     <EditText
         android:inputType="text"

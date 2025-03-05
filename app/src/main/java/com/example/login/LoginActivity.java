@@ -79,8 +79,15 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
             Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
             startActivity(intent);
         } else if (view == btnLogin) {
-            String email = etLoginEmail.getText().toString();
-            String pass = etLoginPassword.getText().toString();
+            String email = etLoginEmail.getText().toString().trim();
+            String pass = etLoginPassword.getText().toString().trim();
+
+            // Validate email and password fields
+            if (email.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(LoginActivity.this, "Please enter both email and password.", Toast.LENGTH_SHORT).show();
+                return;  // Prevent Firebase authentication call if inputs are invalid
+            }
+
             FirebaseAuth fbAuth = FirebaseAuth.getInstance();
             fbAuth.signInWithEmailAndPassword(email, pass)
                     .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
@@ -94,9 +101,10 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                     }).addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception e) {
-                            Toast.makeText(LoginActivity.this, "ERROR: email or password incorrect", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LoginActivity.this, "One or more of the fields is incorrect", Toast.LENGTH_SHORT).show();
                         }
                     });
         }
+
     }
 }

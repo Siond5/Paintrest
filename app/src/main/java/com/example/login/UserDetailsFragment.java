@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -61,8 +63,92 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnLogout.setOnClickListener(this);
         btnDeleteAccount.setOnClickListener(this);
         ivProfilePicture.setOnClickListener(v -> showImageOptions());
-
+        setUpTextWatchers();
         return view;
+    }
+
+    private void setUpTextWatchers() {
+        etDetailsFirstName.addTextChangedListener(createValidationWatcher(etDetailsFirstName, "name"));
+        etDetailsLastName.addTextChangedListener(createValidationWatcher(etDetailsLastName, "name"));
+        etDetailsPhone.addTextChangedListener(createValidationWatcher(etDetailsPhone, "phone"));
+        etDetailsYOB.addTextChangedListener(createValidationWatcher(etDetailsYOB, "yearOfBirth"));
+    }
+
+    private TextWatcher createValidationWatcher(final EditText editText, final String type) {
+        return new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+                switch (type) {
+                    case "name":
+                        validateName(editText.getText().toString(), editText == etDetailsFirstName ? "first name" : "last name");
+                        break;
+                    case "phone":
+                        validatePhone(editText.getText().toString());
+                        break;
+                    case "yearOfBirth":
+                        validateYearOfBirth(editText.getText().toString());
+                        break;
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {}
+        };
+    }
+    // Name validation (first name or last name)
+    private boolean validateName(String name, String fieldName) {
+        if (name.isEmpty()) {
+            if (fieldName.equals("first name")) {
+                etDetailsFirstName.setError("Please enter your first name.");
+            } else {
+                etDetailsLastName.setError("Please enter your last name.");
+            }
+            return false;
+        } else {
+            if (fieldName.equals("first name")) {
+                etDetailsFirstName.setError(null);
+            } else {
+                etDetailsLastName.setError(null);
+            }
+            return true;
+        }
+    }
+
+    // Phone validation
+    private boolean validatePhone(String phone) {
+        if (phone.isEmpty()) {
+            etDetailsPhone.setError("Please enter your phone number.");
+            return false;
+        } else if (!phone.matches("\\d{9,10}")) {
+            etDetailsPhone.setError("Phone must be 9-10 digits and contain only numbers.");
+            return false;
+        } else {
+            etDetailsPhone.setError(null);
+            return true;
+        }
+    }
+
+    // Year of birth validation
+    private boolean validateYearOfBirth(String yobStr) {
+        if (yobStr.isEmpty()) {
+            etDetailsYOB.setError("Please enter your year of birth.");
+            return false;
+        } else if (yobStr.length() != 4) {
+            etDetailsYOB.setError("Year of birth must be exactly 4 digits.");
+            return false;
+        } else {
+            try {
+                Integer.parseInt(yobStr);
+                etDetailsYOB.setError(null);
+                return true;
+            } catch (NumberFormatException e) {
+                etDetailsYOB.setError("Year of birth must be a valid number.");
+                return false;
+            }
+        }
     }
 
     @Override
@@ -74,86 +160,63 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             String phone = etDetailsPhone.getText().toString();
             String yobStr = etDetailsYOB.getText().toString();
 
-            if (firstName.isEmpty()) {
-                Toast.makeText(getActivity(), "Please enter your first name.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (lastName.isEmpty()) {
-                Toast.makeText(getActivity(), "Please enter your last name.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (phone.isEmpty()) {
-                Toast.makeText(getActivity(), "Please enter your phone number.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            //valid fields by boolean veriables
+            boolean isFirstNameValid = validateName(firstName, "first name");
+            boolean isLastNameValid = validateName(lastName, "last name");
+            boolean isPhoneValid = validatePhone(phone);
+            boolean isYOBValid = validateYearOfBirth(yobStr);
+            if (isFirstNameValid && isLastNameValid && isPhoneValid && isYOBValid) {
+                int yob = Integer.parseInt(yobStr);
+                FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+                String uid = fbAuth.getUid();
+                FirebaseFirestore store = FirebaseFirestore.getInstance();
+                MyUser user = new MyUser();
+                user.setFirstName(firstName);
+                user.setLastName(lastName);
+                user.setPhone(phone);
+                user.setYob(yob);
 
-            if (!phone.matches("\\d{9,10}")) {
-                Toast.makeText(getActivity(), "Phone must be 9-10 digits and contain only numbers.-", Toast.LENGTH_SHORT).show();
-                return;
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("firstName", firstName);
+                editor.putString("lastName", lastName);
+                editor.putString("phone", phone);
+                editor.putInt("yob", yob);
+                editor.apply();
+
+                store.collection("users").document(uid).set(user);
+                Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
+            } else if (view == btnLogout) {
+                Intent intent = new Intent(this.getActivity(), MainActivity.class);
+                startActivity(intent);
+                FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+                fbAuth.signOut();
+                getActivity().finish();
+            } else if (view == btnDeleteAccount) {
+                FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+                String uid = fbAuth.getUid();
+                FirebaseFirestore store = FirebaseFirestore.getInstance();
+                try {
+                    store.collection("users").document(uid).delete();
+                    store.collection("colors").document(uid).delete();
+                    fbAuth.getCurrentUser().delete()
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+
+                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+                                    startActivity(intent);
+                                    getActivity().finish();
+                                }
+                            });
+                } catch (Exception e) {
+                    Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+                }
             }
-
-            if (yobStr.isEmpty()) {
-                Toast.makeText(getActivity(), "Please enter your year of birth.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (yobStr.length() != 4) {
-                Toast.makeText(getActivity(), "Year of birth must be exactly 4 digits.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            int yob;
-            try {
-                yob = Integer.parseInt(yobStr);
-            } catch (NumberFormatException e) {
-                Toast.makeText(getActivity(), "Year of birth must be a valid number.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-            String uid = fbAuth.getUid();
-            FirebaseFirestore store = FirebaseFirestore.getInstance();
-            MyUser user = new MyUser();
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setPhone(phone);
-            user.setYob(yob);
-
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("firstName", firstName);
-            editor.putString("lastName", lastName);
-            editor.putString("phone", phone);
-            editor.putInt("yob", yob);
-            editor.apply();
-
-            store.collection("users").document(uid).set(user);
-            Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
-        } else if (view == btnLogout) {
-            Intent intent = new Intent(this.getActivity(), MainActivity.class);
-            startActivity(intent);
-            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-            fbAuth.signOut();
-            getActivity().finish();
-        } else if (view == btnDeleteAccount) {
-            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-            String uid = fbAuth.getUid();
-            FirebaseFirestore store = FirebaseFirestore.getInstance();
-            try {
-                store.collection("users").document(uid).delete();
-                store.collection("colors").document(uid).delete();
-                fbAuth.getCurrentUser().delete()
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
-
-                                Intent intent = new Intent(getActivity(), MainActivity.class);
-                                startActivity(intent);
-                                getActivity().finish();
-                            }
-                        });
-            } catch (Exception e) {
-                Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+            else {
+                Toast.makeText(getActivity(), "Please fix the errors above before submitting.", Toast.LENGTH_SHORT).show();
             }
         }
+
     }
 
     private void showImageOptions() {
