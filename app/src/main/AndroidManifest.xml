@@ -22,19 +22,19 @@
         android:theme="@style/Theme.Login"
         tools:targetApi="31">
         <activity
-            android:name=".ViewPhotoActivity"
+            android:name=".Activities.ViewPhotoActivity"
             android:exported="false" />
         <activity
-            android:name=".MenuActivity"
+            android:name=".Activities.MenuActivity"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".Activities.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".SignupActivity"
+            android:name=".Activities.SignupActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".Activities.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -52,9 +52,9 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <receiver android:name=".NotificationReceiver" android:exported="false" android:enabled="true"/>
+        <receiver android:name=".Notification_classes.NotificationReceiver" android:exported="false" android:enabled="true"/>
         <receiver
-            android:name=".BootReceiver"
+            android:name=".Notification_classes.BootReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
