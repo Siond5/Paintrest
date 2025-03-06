@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MenuActivity">
+    tools:context=".Activities.MenuActivity">
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -21,8 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         app:menu="@menu/main_menu"
-        android:visibility="gone"
-        />
+        android:visibility="gone" />
 
     <FrameLayout
         android:id="@+id/fragment_container"
