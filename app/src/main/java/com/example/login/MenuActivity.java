@@ -1,38 +1,45 @@
 package com.example.login;
 
-import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.navigation.NavigationBarView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
+
+import java.util.Calendar;
 
 public class MenuActivity extends AppCompatActivity {
     BottomNavigationView bottomNavigationView;
     SharedPreferences sp;
     private MyUser user;
     private Colors color;
-    private Image image;
     private int bgc;
     private int itemId;
     private ProgressBar progressBar;
     private boolean isUserLoaded = false;
     private boolean isColorLoaded = false;
-    private boolean isImageLoaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +51,7 @@ public class MenuActivity extends AppCompatActivity {
 
         progressBar.setVisibility(View.VISIBLE); // Show loading screen
         loadFromFirebase(this);
+        NotificationReceiver.createNotificationChannel(this);  // Make sure to create the notification channel
 
         bottomNavigationView.setOnItemSelectedListener(
                 new NavigationBarView.OnItemSelectedListener() {
@@ -67,9 +75,11 @@ public class MenuActivity extends AppCompatActivity {
                         return false;
                     }
                 });
+
+        scheduleRepeatingNotification(this);
     }
 
-    public void loadFromFirebase(Activity activity) {
+    public void loadFromFirebase(AppCompatActivity activity) {
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         String uid = fbAuth.getUid();
         FirebaseFirestore store = FirebaseFirestore.getInstance();
@@ -97,29 +107,12 @@ public class MenuActivity extends AppCompatActivity {
                 checkLoadingComplete();
             });
 
-//            store.collection("images").document(uid).get().addOnSuccessListener(documentSnapshot -> {
-//                image = documentSnapshot.toObject(Image.class);
-//                SharedPreferences.Editor editor = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE).edit();
-//
-//                if (image != null) {
-//                    editor.putString("profileImage", image.getProfileImage());
-//                    editor.putString("profileImageUri", image.getProfileImageUri());
-//                } else {
-//                    editor.putString("profileImage", "");
-//                    editor.putString("profileImageUri", "");
-//                }
-//                editor.apply();
-//                isImageLoaded = true;
-//                checkLoadingComplete();
-//            });
-
         } catch (Exception e) {
             Toast.makeText(activity, "Failed to load data", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void checkLoadingComplete() {
-//        && isImageLoaded
         if (isUserLoaded && isColorLoaded) {
             progressBar.setVisibility(View.GONE);
             bottomNavigationView.setVisibility(View.VISIBLE);
@@ -132,6 +125,40 @@ public class MenuActivity extends AppCompatActivity {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, fragment);
         fragmentTransaction.commit();
+    }
+
+    void scheduleRepeatingNotification(Context context) {
+        // Check if we have permission to set exact alarms (for Android 12/S and above)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!context.getSystemService(AlarmManager.class).canScheduleExactAlarms()) {
+                // Permission not granted, prompt the user to go to settings
+                Toast.makeText(context, "Please allow permission to schedule exact alarms", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                context.startActivity(intent);
+                return;
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                // Request permission if not granted
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+            }
+        }
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(context, NotificationReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Calendar calendar = Calendar.getInstance();
+        //calendar.add(Calendar.MINUTE, 1); // First notification 1 minute from now
+        calendar.set(Calendar.HOUR_OF_DAY, 17);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        // Set the exact alarm initially
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+
     }
 
 }
