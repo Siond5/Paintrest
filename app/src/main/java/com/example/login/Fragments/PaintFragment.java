@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,26 +13,31 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
 import androidx.fragment.app.Fragment;
-
+import androidx.lifecycle.ViewModelProvider;
 import com.example.login.Activities.MainActivity;
 import com.example.login.Dialogs.PaintSettingsDialogFragment;
 import com.example.login.R;
+import com.example.login.Classes.PaintPath;
+import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PaintFragment extends Fragment {
 
     private PaintView paintView;
     private static Bitmap savedBitmap;
+    private DrawingViewModel drawingViewModel;
+    private Button btn_undo;
+    private Button btn_redo;
 
     public PaintFragment() {
-        // Required empty public constructor
+        // Required empty constructor.
     }
 
     @Override
@@ -42,29 +45,108 @@ public class PaintFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_paint, container, false);
         loadColor(getActivity(), view);
         FrameLayout canvasContainer = view.findViewById(R.id.canvas_container);
+        drawingViewModel = new ViewModelProvider(requireActivity()).get(DrawingViewModel.class);
         paintView = new PaintView(getActivity());
         canvasContainer.addView(paintView);
 
         Button btnClear = view.findViewById(R.id.btn_clear);
         Button btnPublish = view.findViewById(R.id.btn_publish);
         Button paintSettings = view.findViewById(R.id.paintSettings);
+        btn_undo = view.findViewById(R.id.btn_undo);
+        btn_redo = view.findViewById(R.id.btn_redo);
 
         btnClear.setOnClickListener(v -> {
-            paintView.clearCanvas();
-            savedBitmap = null;
+            paintView.clearCanvasAndRecord();
+            updateUndoRedoButtons();
+            updateViewModelStacks();
         });
-
         btnPublish.setOnClickListener(v -> publishCanvas());
         paintSettings.setOnClickListener(v -> openSettings());
 
+        btn_undo.setOnClickListener(v -> {
+            paintView.undo();
+            updateUndoRedoButtons();
+            updateViewModelStacks();
+            // Reapply global settings from the ViewModel
+            if (drawingViewModel.getCurrentTool().getValue() != null) {
+                paintView.reapplyGlobalSettings(
+                        drawingViewModel.getBrushColor().getValue(),
+                        drawingViewModel.getBrushSize().getValue(),
+                        drawingViewModel.getCurrentTool().getValue()
+                );
+            }
+        });
+
+        btn_redo.setOnClickListener(v -> {
+            paintView.redo();
+            updateUndoRedoButtons();
+            updateViewModelStacks();
+            // Reapply global settings from the ViewModel
+            if (drawingViewModel.getCurrentTool().getValue() != null) {
+                paintView.reapplyGlobalSettings(
+                        drawingViewModel.getBrushColor().getValue(),
+                        drawingViewModel.getBrushSize().getValue(),
+                        drawingViewModel.getCurrentTool().getValue()
+                );
+            }
+        });
+
+
+        paintView.setOnPathRecordedCallback(() -> {
+            updateUndoRedoButtons();
+            updateViewModelStacks();
+        });
+
+        // Restore tool settings from the ViewModel.
+        if (drawingViewModel.getBrushSize().getValue() != null)
+            paintView.setBrushSize(drawingViewModel.getBrushSize().getValue());
+        if (drawingViewModel.getCurrentTool().getValue() != null)
+            paintView.setCurrentTool(drawingViewModel.getCurrentTool().getValue());
+        if (drawingViewModel.getBrushColor().getValue() != null)
+            paintView.setBrushColor(drawingViewModel.getBrushColor().getValue());
+        if (drawingViewModel.getCurrentBitmap() != null)
+            paintView.setBitmap(drawingViewModel.getCurrentBitmap());
+        if (drawingViewModel.getUndoStack().getValue() != null && !drawingViewModel.getUndoStack().getValue().isEmpty())
+            paintView.setUndoStack(drawingViewModel.getUndoStack().getValue());
+        if (drawingViewModel.getRedoStack().getValue() != null && !drawingViewModel.getRedoStack().getValue().isEmpty())
+            paintView.setRedoStack(drawingViewModel.getRedoStack().getValue());
+
+        updateUndoRedoButtons();
         restoreCanvas();
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (drawingViewModel.getBrushColor().getValue() != null)
+            paintView.setBrushColor(drawingViewModel.getBrushColor().getValue());
+        if (drawingViewModel.getBrushSize().getValue() != null)
+            paintView.setBrushSize(drawingViewModel.getBrushSize().getValue());
+        if (drawingViewModel.getCurrentTool().getValue() != null)
+            paintView.setCurrentTool(drawingViewModel.getCurrentTool().getValue());
     }
 
     @Override
     public void onPause() {
         super.onPause();
         saveCanvas();
+        drawingViewModel.setCurrentBitmap(paintView.getBitmap());
+        drawingViewModel.setBrushColor(paintView.getBrushColor());
+        drawingViewModel.setBrushSize((float) paintView.getBrushSize());
+        // Optionally update the tool as well:
+        drawingViewModel.setCurrentTool(paintView.getCurrentTool());
+        updateViewModelStacks();
+    }
+
+    private void updateViewModelStacks() {
+        drawingViewModel.setUndoStack(new ArrayList<>(paintView.getUndoStack()));
+        drawingViewModel.setRedoStack(new ArrayList<>(paintView.getRedoStack()));
+    }
+
+    private void updateUndoRedoButtons() {
+        btn_undo.setEnabled(paintView.canUndo());
+        btn_redo.setEnabled(paintView.canRedo());
     }
 
     private void saveCanvas() {
@@ -74,31 +156,26 @@ public class PaintFragment extends Fragment {
     }
 
     private void restoreCanvas() {
-        if (savedBitmap != null) {
+        if (savedBitmap != null)
             paintView.setBitmap(savedBitmap);
-        }
     }
 
     private void publishCanvas() {
         paintView.setDrawingCacheEnabled(true);
         Bitmap bitmap = Bitmap.createBitmap(paintView.getDrawingCache());
         paintView.setDrawingCacheEnabled(false);
-
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
         byte[] data = baos.toByteArray();
-
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {
             Toast.makeText(getActivity(), "You are not logged in", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(getActivity(), MainActivity.class));
             return;
         }
-
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         String filename = "paint_" + System.currentTimeMillis() + ".png";
         StorageReference canvasRef = storageRef.child("paintings").child(uid).child(filename);
-
         canvasRef.putBytes(data)
                 .addOnSuccessListener(taskSnapshot ->
                         Toast.makeText(getActivity(), "The painting has been successfully Published!", Toast.LENGTH_SHORT).show()
@@ -118,13 +195,15 @@ public class PaintFragment extends Fragment {
                     paintView.setBrushColor(color);
                     paintView.setBrushSize(size);
                     paintView.setCurrentTool(tool);
+                    drawingViewModel.setBrushColor(color);
+                    drawingViewModel.setBrushSize((float) size);
+                    drawingViewModel.setCurrentTool(tool);
                 }
         );
     }
 
-    public void loadColor(Activity activity, View view){
-        SharedPreferences sharedPreferences;
-        sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+    public void loadColor(Activity activity, View view) {
+        SharedPreferences sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("color", R.color.Default);
         view.setBackgroundColor(color);
     }

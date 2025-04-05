@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:text="Undo"
         android:textSize="16dp"
-        android:visibility="gone"
+        android:visibility="visible"
         style="@style/BoldText"
         android:backgroundTint="@color/button"
         />
@@ -35,7 +35,7 @@
         <Button
             android:id="@+id/btn_redo"
             android:text="Redo️️"
-            android:visibility="gone"
+            android:visibility="visible"
 
             android:layout_width="wrap_content"
             android:layout_marginEnd="5dp"
