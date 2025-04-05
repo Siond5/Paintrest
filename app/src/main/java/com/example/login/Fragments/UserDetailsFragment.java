@@ -39,6 +39,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.yalantis.ucrop.UCrop;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 
@@ -312,6 +316,40 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
     }
 
+    private ActivityResultLauncher<Intent> cropImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if(result.getResultCode() == Activity.RESULT_OK) {
+                        // Retrieve the cropped image Uri from UCrop
+                        Uri resultUri = UCrop.getOutput(result.getData());
+                        if(resultUri != null) {
+                            profileImageUri = resultUri;
+                            ivProfilePicture.setImageURI(profileImageUri);
+                            savePictureToSharedPreferences();
+                        }
+                    } else {
+                        Toast.makeText(getActivity(), "Cropping failed. Please try again.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+    );
+
+    private void cropImage(Uri sourceUri) {
+        // Create a destination URI for the cropped image in the cache directory
+        Uri destinationUri = Uri.fromFile(new File(getActivity().getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
+
+        // Setup UCrop options: here enforcing a square crop; adjust as needed
+        UCrop uCrop = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1, 1)       // Enforce 1:1 aspect ratio; remove if you want free cropping.
+                .withMaxResultSize(800, 800);  // Set maximum result dimensions
+
+        // Launch UCrop activity
+        Intent uCropIntent = uCrop.getIntent(getActivity());
+        cropImageLauncher.launch(uCropIntent);
+    }
+
     private ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
@@ -319,8 +357,8 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         if (profileImageUri != null) {
-                            ivProfilePicture.setImageURI(profileImageUri);
-                            savePictureToSharedPreferences();
+                            // Instead of directly using the image, start the crop process
+                            cropImage(profileImageUri);
                         } else {
                             Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
                         }
@@ -332,13 +370,16 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     );
 
 
+
     private final ActivityResultLauncher<Intent> pickImageFromGallery = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    profileImageUri = result.getData().getData();
-                    ivProfilePicture.setImageURI(profileImageUri);
-                    savePictureToSharedPreferences();
+                    Uri sourceUri = result.getData().getData();
+                    if(sourceUri != null){
+                        // Start the crop process
+                        cropImage(sourceUri);
+                    }
                 } else {
                     Toast.makeText(getActivity(), "Failed to select photo.", Toast.LENGTH_SHORT).show();
                 }
@@ -372,11 +413,18 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         String savedUriString = sharedPreferences.getString("profileImageUri", null);
         if (savedUriString != null) {
-            //ivProfilePicture.setImageURI(Uri.parse(savedUriString));
+            profileImageUri = Uri.parse(savedUriString);  // Assign the loaded URI
+            Glide.with(this)
+                    .load(profileImageUri)
+                    .placeholder(R.drawable.default_profile)
+                    .error(R.drawable.default_profile)
+                    .transform(new CircleCrop())
+                    .into(ivProfilePicture);
         } else {
             ivProfilePicture.setImageResource(R.drawable.default_profile);
         }
     }
+
 
     private void deletePhoto() {
         if (profileImageUri == null) {

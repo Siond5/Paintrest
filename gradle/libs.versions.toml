@@ -27,7 +27,6 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
-#ucrop = { group = "com.github.yalantis", name = "ucrop", version = "2.2.8"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
