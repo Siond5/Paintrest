@@ -48,8 +48,9 @@ public class NotificationReceiver extends BroadcastReceiver {
                     .setAutoCancel(true);
 
             // Get the NotificationManager system service
+            int notificationId = (int) System.currentTimeMillis();
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-            notificationManager.notify(1, builder.build());
+            notificationManager.notify(notificationId, builder.build());
             Log.d("NotificationReceiver", "Notification sent!");
         } catch (SecurityException e) {
             Log.e("NotificationReceiver", "SecurityException: Permission might not be granted", e);

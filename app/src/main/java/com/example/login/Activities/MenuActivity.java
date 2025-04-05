@@ -178,7 +178,9 @@ public class MenuActivity extends AppCompatActivity {
         calendar.set(Calendar.SECOND, 0);
 
         // Set the exact alarm initially
+       // long dayInMillis = 86400000; // 24 hours in milliseconds
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+       // alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),dayInMillis, pendingIntent);
     }
 
 

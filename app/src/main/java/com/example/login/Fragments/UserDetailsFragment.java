@@ -5,12 +5,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +21,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -33,13 +38,15 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 
 public class UserDetailsFragment extends Fragment implements View.OnClickListener {
     private EditText etDetailsEmail, etDetailsFirstName, etDetailsLastName, etDetailsPhone, etDetailsYOB;
     private Button btnDetailsSave, btnLogout, btnDeleteAccount, btnChangePassword;
     private ImageView ivProfilePicture;
-    private Uri profileImageUri, croppedImageUri;
+    private Uri profileImageUri;
     private SharedPreferences sharedPreferences;
 
     public UserDetailsFragment() {
@@ -63,7 +70,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
         loadColor(getActivity(), view);
         loadDetails();
-       // loadProfilePicture();
+        loadProfilePicture();
 
         btnDetailsSave.setOnClickListener(this);
         btnLogout.setOnClickListener(this);
@@ -283,91 +290,89 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 .show();
     }
 
-    private void initializeCameraUri() {
-        File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                "profile_" + System.currentTimeMillis() + ".jpg");
+//    private void initializeCameraUri() {
+//        File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+//                "profile_" + System.currentTimeMillis() + ".jpg");
+//
+//        profileImageUri = FileProvider.getUriForFile(
+//                getActivity(),
+//                getActivity().getApplicationContext().getPackageName() + ".provider",
+//                photoFile
+//        );
+//    }
 
-        profileImageUri = FileProvider.getUriForFile(
-                getActivity(),
-                getActivity().getApplicationContext().getPackageName() + ".provider",
-                photoFile
-        );
+    private void initializeCameraUri() {
+        try {
+            File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                    "profile_" + System.currentTimeMillis() + ".jpg");
+            profileImageUri = FileProvider.getUriForFile(getActivity(),
+                    getActivity().getApplicationContext().getPackageName() + ".provider", photoFile);
+        } catch (Exception e) {
+            profileImageUri = null;
+        }
     }
 
-
-    private final ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
+    private ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == getActivity().RESULT_OK) {
-                    startCrop(profileImageUri);
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        if (profileImageUri != null) {
+                            ivProfilePicture.setImageURI(profileImageUri);
+                            savePictureToSharedPreferences();
+                        } else {
+                            Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_LONG).show();
+                    }
                 }
             }
     );
+
 
     private final ActivityResultLauncher<Intent> pickImageFromGallery = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == getActivity().RESULT_OK && result.getData() != null) {
-                    Uri selectedImageUri = result.getData().getData();
-                   startCrop(selectedImageUri);
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    profileImageUri = result.getData().getData();
+                    ivProfilePicture.setImageURI(profileImageUri);
+                    savePictureToSharedPreferences();
+                } else {
+                    Toast.makeText(getActivity(), "Failed to select photo.", Toast.LENGTH_SHORT).show();
                 }
             }
     );
 
-    private void startCrop(Uri sourceUri) {
-        try {
-            File croppedFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                    "cropped_" + System.currentTimeMillis() + ".jpg");
-            croppedImageUri = Uri.fromFile(croppedFile);
-
-            Intent cropIntent = new Intent("com.android.camera.action.CROP");
-            cropIntent.setDataAndType(sourceUri, "image/*");
-            cropIntent.putExtra("crop", "true");
-            cropIntent.putExtra("aspectX", 1);
-            cropIntent.putExtra("aspectY", 1);
-            cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, croppedImageUri);
-            cropIntent.putExtra("outputFormat", "JPEG");
-
-            cropImage.launch(cropIntent);
-        } catch (Exception e) {
-            Toast.makeText(getActivity(), "Crop function is not supported on this device", Toast.LENGTH_SHORT).show();
+    private void savePictureToSharedPreferences()
+    {
+        if (profileImageUri!=null)
+        {sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        //editor.putString("profileImage", base64Photo);
+        editor.putString("profileImageUri", profileImageUri.toString());
+        editor.apply();
         }
     }
 
-
-    private final ActivityResultLauncher<Intent> cropImage = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == getActivity().RESULT_OK) {
-                    ivProfilePicture.setImageURI(croppedImageUri);
-                    savePictureToFirebaseStorage();
-                }
-            }
-    );
-
-
-    private void savePictureToFirebaseStorage() {
-        if (croppedImageUri == null) return;
-
-        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-        String uid = fbAuth.getCurrentUser().getUid();
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference("profile_images/" + uid + ".jpg");
-
-        storageRef.putFile(croppedImageUri)
-                .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-                    sharedPreferences.edit().putString("profileImageUri", uri.toString()).apply();
-                    ivProfilePicture.setImageURI(croppedImageUri);
-                }))
-                .addOnFailureListener(e -> Log.e("SaveImage", "Failed to upload image", e));
+    private byte[] convertImageToByteArray(Uri imageUri) {
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            Toast.makeText(getActivity(), "Failed to convert image.", Toast.LENGTH_SHORT).show();
+            return null;
+        }
     }
 
     private void loadProfilePicture() {
         sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         String savedUriString = sharedPreferences.getString("profileImageUri", null);
-
         if (savedUriString != null) {
-            ivProfilePicture.setImageURI(Uri.parse(savedUriString));
+            //ivProfilePicture.setImageURI(Uri.parse(savedUriString));
         } else {
             ivProfilePicture.setImageResource(R.drawable.default_profile);
         }
@@ -403,9 +408,9 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
 
     private void viewPhoto() {
-        if (croppedImageUri != null) {
+        if (profileImageUri != null) {
             Intent intent = new Intent(getActivity(), ViewPhotoActivity.class);
-            intent.putExtra("photoUri", croppedImageUri.toString());
+            intent.putExtra("photoUri", profileImageUri.toString());
             startActivity(intent);
         } else {
             Toast.makeText(getContext(), "No profile photo to view.", Toast.LENGTH_SHORT).show();
