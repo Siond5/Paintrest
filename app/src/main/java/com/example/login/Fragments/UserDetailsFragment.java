@@ -30,7 +30,10 @@ import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
+import com.example.login.Activities.LoginActivity;
 import com.example.login.Activities.MainActivity;
+import com.example.login.Activities.MenuActivity;
+import com.example.login.Activities.UiSettingsActivity;
 import com.example.login.Classes.MyUser;
 import com.example.login.R;
 import com.example.login.Activities.ViewPhotoActivity;
@@ -49,14 +52,13 @@ import java.io.File;
 public class UserDetailsFragment extends Fragment implements View.OnClickListener {
     private EditText etDetailsEmail, etDetailsFirstName, etDetailsLastName, etDetailsPhone, etDetailsYOB;
     private Button btnDetailsSave, btnLogout, btnDeleteAccount, btnChangePassword;
-    private ImageView ivProfilePicture;
+    private ImageView ivProfilePicture, btnUserUi;
     private Uri profileImageUri;
     private SharedPreferences sharedPreferences;
 
     public UserDetailsFragment() {
         // Required empty public constructor
     }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_user_details, container, false);
@@ -71,6 +73,8 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnLogout = view.findViewById(R.id.btnLogout);
         btnDeleteAccount = view.findViewById(R.id.btnDeleteAccount);
         btnChangePassword = view.findViewById(R.id.btnChangePassword);
+        btnUserUi = view.findViewById(R.id.btnUserUi);
+
 
         loadColor(getActivity(), view);
         loadDetails();
@@ -81,7 +85,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnDeleteAccount.setOnClickListener(this);
         ivProfilePicture.setOnClickListener(v -> showImageOptions());
         btnChangePassword.setOnClickListener(this);
-
+        btnUserUi.setOnClickListener(this);
 
 
         setUpTextWatchers();
@@ -119,6 +123,13 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             public void afterTextChanged(Editable editable) {}
         };
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh the UI when returning from the activity
+        loadColor(getActivity(), getView());
+    }
+
     // Name validation (first name or last name)
     private boolean validateName(String name, String fieldName) {
         if (name.isEmpty()) {
@@ -174,7 +185,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
 
     @Override
     public void onClick(View view) {
-    if (view == btnDetailsSave) {
+        if (view == btnDetailsSave) {
 
             String firstName = etDetailsFirstName.getText().toString();
             String lastName = etDetailsLastName.getText().toString();
@@ -207,55 +218,59 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 store.collection("users").document(uid).set(user);
                 Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
             }
-    }
+        }
 
-    else if (view == btnLogout) {
-        Intent intent = new Intent(this.getActivity(), MainActivity.class);
-        startActivity(intent);
-        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-        fbAuth.signOut();
-        getActivity().finish();
-    }
+        else if (view == btnLogout) {
+            Intent intent = new Intent(this.getActivity(), MainActivity.class);
+            startActivity(intent);
+            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+            fbAuth.signOut();
+            getActivity().finish();
+        }
 
-    else if (view == btnDeleteAccount) {
-        new AlertDialog.Builder(getActivity())
-                .setTitle("Delete Account")
-                .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
-                .setPositiveButton("Yes", (dialog, which) -> {
-                    // Proceed with account deletion
-                    FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-                    String uid = fbAuth.getUid();
-                    FirebaseFirestore store = FirebaseFirestore.getInstance();
-                    try {
-                        store.collection("users").document(uid).delete();
-                        store.collection("colors").document(uid).delete();
-                        fbAuth.getCurrentUser().delete()
-                                .addOnCompleteListener(task -> {
-                                    if (task.isSuccessful()) {
-                                        Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+        else if (view == btnDeleteAccount) {
+            new AlertDialog.Builder(getActivity())
+                    .setTitle("Delete Account")
+                    .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        // Proceed with account deletion
+                        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+                        String uid = fbAuth.getUid();
+                        FirebaseFirestore store = FirebaseFirestore.getInstance();
+                        try {
+                            store.collection("users").document(uid).delete();
+                            store.collection("colors").document(uid).delete();
+                            fbAuth.getCurrentUser().delete()
+                                    .addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
 
-                                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                                        startActivity(intent);
-                                        getActivity().finish();
-                                    }
-                                });
-                    } catch (Exception e) {
-                        Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Cancel", (dialog, which) -> {
-                    // Do nothing, just dismiss the dialog
-                    dialog.dismiss();
-                })
-                .show();
-    }
+                                            Intent intent = new Intent(getActivity(), MainActivity.class);
+                                            startActivity(intent);
+                                            getActivity().finish();
+                                        }
+                                    });
+                        } catch (Exception e) {
+                            Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        // Do nothing, just dismiss the dialog
+                        dialog.dismiss();
+                    })
+                    .show();
+        }
 
-    else if (view == btnChangePassword) {
-        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-        fbAuth.sendPasswordResetEmail(fbAuth.getCurrentUser().getEmail());
-        Toast.makeText(getActivity(), "Password reset link was sent to your email", Toast.LENGTH_SHORT).show();
-    }
+        else if (view == btnChangePassword) {
+            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+            fbAuth.sendPasswordResetEmail(fbAuth.getCurrentUser().getEmail());
+            Toast.makeText(getActivity(), "Password reset link was sent to your email", Toast.LENGTH_SHORT).show();
+        }
 
+        else if (view == btnUserUi) {
+            Intent intent = new Intent(getActivity(), UiSettingsActivity.class);
+            startActivity(intent);
+        }
     }
 
     private void showImageOptions() {
@@ -293,17 +308,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 })
                 .show();
     }
-
-//    private void initializeCameraUri() {
-//        File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-//                "profile_" + System.currentTimeMillis() + ".jpg");
-//
-//        profileImageUri = FileProvider.getUriForFile(
-//                getActivity(),
-//                getActivity().getApplicationContext().getPackageName() + ".provider",
-//                photoFile
-//        );
-//    }
 
     private void initializeCameraUri() {
         try {

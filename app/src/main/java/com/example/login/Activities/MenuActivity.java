@@ -71,13 +71,13 @@ public class MenuActivity extends AppCompatActivity {
                         if (itemId == R.id.menu_home) {
                             createFragment(new HomeFragment());
                             return true;
-                        } else if (itemId == R.id.menu_userdetails) {
+                        } else if (itemId == R.id.menu_settings) {
                             createFragment(new UserDetailsFragment());
                             return true;
                         } else if (itemId == R.id.menu_paint) {
                             createFragment(new PaintFragment());
                             return true;
-                        } else if (itemId == R.id.menu_settings) {
+                        } else if (itemId == R.id.menu_profile) {
                             createFragment(new SettingsFragment());
                             return true;
                         }
