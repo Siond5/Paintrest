@@ -1,11 +1,15 @@
 package com.example.login.Fragments;
 
+import static androidx.browser.customtabs.CustomTabsClient.getPackageName;
+
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,20 +17,22 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.login.Activities.MainActivity;
 import com.example.login.Dialogs.PaintSettingsDialogFragment;
 import com.example.login.R;
-import com.example.login.Classes.PaintPath;
 import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.List;
 
 public class PaintFragment extends Fragment {
 
@@ -50,7 +56,7 @@ public class PaintFragment extends Fragment {
         canvasContainer.addView(paintView);
 
         Button btnClear = view.findViewById(R.id.btn_clear);
-        Button btnPublish = view.findViewById(R.id.btn_publish);
+        Button btnPost = view.findViewById(R.id.btn_post);
         Button paintSettings = view.findViewById(R.id.paintSettings);
         btn_undo = view.findViewById(R.id.btn_undo);
         btn_redo = view.findViewById(R.id.btn_redo);
@@ -60,7 +66,7 @@ public class PaintFragment extends Fragment {
             updateUndoRedoButtons();
             updateViewModelStacks();
         });
-        btnPublish.setOnClickListener(v -> publishCanvas());
+        btnPost.setOnClickListener(v -> showPostOptions());
         paintSettings.setOnClickListener(v -> openSettings());
 
         btn_undo.setOnClickListener(v -> {
@@ -159,6 +165,50 @@ public class PaintFragment extends Fragment {
         if (savedBitmap != null)
             paintView.setBitmap(savedBitmap);
     }
+
+    private void showPostOptions() {
+        String[] options = {"Publish the paint", "Share the paint"};
+        new AlertDialog.Builder(getContext())
+                .setTitle("Post painting")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        publishCanvas();
+                    } else if (which == 1) {
+                        shareImage();
+                    }
+                })
+                .show();
+    }
+
+    private void shareImage() {
+        Bitmap painting = paintView.getBitmap();
+        try {
+
+            File cachePath = new File(getContext().getCacheDir(), "images");
+            if (!cachePath.exists()) {
+                cachePath.mkdirs();
+            }
+
+            File file = new File(cachePath, "image.png");
+            FileOutputStream stream = new FileOutputStream(file);
+            painting.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            stream.flush();
+            stream.close();
+
+            Uri contentUri = FileProvider.getUriForFile(getContext(), "com.example.login.fileprovider", file);
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("image/png");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(shareIntent, "Share Image"));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
 
     private void publishCanvas() {
         paintView.setDrawingCacheEnabled(true);

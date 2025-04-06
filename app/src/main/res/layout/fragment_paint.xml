@@ -81,14 +81,14 @@
             android:layout_margin="5dp" />
 
         <Button
-            android:id="@+id/btn_publish"
+            android:id="@+id/btn_post"
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:layout_weight="1"
             style="@style/BoldText"
             android:textSize="16dp"
             android:backgroundTint="@color/button"
-            android:text="Publish"
+            android:text="Post"
             android:layout_margin="5dp" />
     </LinearLayout>
 

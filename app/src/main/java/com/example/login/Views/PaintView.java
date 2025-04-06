@@ -31,6 +31,7 @@ public class PaintView extends View {
     private Canvas bitmapCanvas;
     private float startX, startY, endX, endY;
     private boolean isDrawingLine = false;
+    private boolean backgroundSet = false; // Flag to ensure white background is set once.
 
     // Undo and redo stacks.
     private Deque<PaintPath> paintPaths = new ArrayDeque<>();
@@ -65,6 +66,10 @@ public class PaintView extends View {
         if (bitmap == null) {
             bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             bitmapCanvas = new Canvas(bitmap);
+            if (!backgroundSet) {
+                bitmap.eraseColor(Color.WHITE);
+                backgroundSet = true;
+            }
         } else {
             Bitmap newBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             Canvas newCanvas = new Canvas(newBitmap);
