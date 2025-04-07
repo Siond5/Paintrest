@@ -3,20 +3,20 @@ package com.example.login.Activities;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import android.graphics.drawable.ColorDrawable;
-import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 
 import com.example.login.Classes.Colors;
@@ -33,8 +33,7 @@ public class UiSettingsActivity extends AppCompatActivity {
     View view;
     // We'll store the color array with a placeholder as the first element.
     String[] colorsWithPlaceholder;
-
-
+    ArrayAdapter<String> adapter; // keep reference to adapter
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,23 +50,21 @@ public class UiSettingsActivity extends AppCompatActivity {
         btnReturn = findViewById(R.id.btnReturn);
         btnReturn.setOnClickListener(v -> finish());
 
-        // Get the original color array from resources.
         String[] originalColors = getResources().getStringArray(R.array.color_array);
-        // Create a new array with one extra element for the placeholder.
+        // Create the placeholder array with one extra slot.
         colorsWithPlaceholder = new String[originalColors.length + 1];
-        colorsWithPlaceholder[0] = "Select a color..."; // Placeholder text.
+        // Initially, set the first element to a default hex value (e.g. white).
+        colorsWithPlaceholder[0] = " ";
         System.arraycopy(originalColors, 0, colorsWithPlaceholder, 1, originalColors.length);
 
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, colorsWithPlaceholder);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, colorsWithPlaceholder);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         set_color.setAdapter(adapter);
 
         sp = this.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
 
         loadColor();
-
-        //changeSelectionBasedOnColor(view);
+        changeSelectionBasedOnColor();
 
         set_color.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -76,7 +73,7 @@ public class UiSettingsActivity extends AppCompatActivity {
                 if (position == 0) return;
                 changeColorBasedOnSelection(position);
                 // After processing, reset selection back to placeholder so the same option can be chosen later.
-                set_color.setSelection(0);
+                //set_color.setSelection(0);
             }
 
             @Override
@@ -85,7 +82,7 @@ public class UiSettingsActivity extends AppCompatActivity {
         });
     }
 
-    private void changeSelectionBasedOnColor(View view) {
+    private void changeSelectionBasedOnColor() {
         ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
         int currentColor = colorDrawable.getColor();
 
@@ -102,20 +99,20 @@ public class UiSettingsActivity extends AppCompatActivity {
                 R.color.pink
         };
 
+        
         for (int i = 0; i < colorArray.length; i++) {
             if (currentColor == ContextCompat.getColor(this, colorArray[i])) {
-                // Set selection to placeholder (0) then programmatically call changeColorBasedOnSelection
-                // with index = i+1 (because placeholder occupies index 0)
-                set_color.setSelection(i + 1);
+                colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));                set_color.setSelection(i + 1);
                 return;
             }
         }
-        set_color.setSelection(10);
+            colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));
+            set_color.setSelection(0);
+
     }
 
     private void changeColorBasedOnSelection(int position) {
         // Adjust position because position 0 is the placeholder.
-        // Real options are at indices 1...n.
         int adjustedPosition = position - 1;
         int color = sp.getInt("color", R.color.Default);
         switch (adjustedPosition) {
@@ -150,17 +147,24 @@ public class UiSettingsActivity extends AppCompatActivity {
                 color = getContextColor(R.color.pink);
                 break;
             case 10:
+                // Show the custom color picker dialog.
                 ColorPickerDialog.show(this, color, selectedColor -> {
                     setBackgroundColor(selectedColor);
+                    // Update the placeholder to show the custom hex value.
+                    colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & selectedColor));
+                    adapter.notifyDataSetChanged();
+                    // Set spinner selection to the updated placeholder.
+                    set_color.setSelection(0);
                 });
                 return;
             default:
-                color = R.color.Default;
+                color = getContextColor(R.color.Default);
         }
 
         ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
         int currentColor = colorDrawable.getColor();
-        if (color != currentColor && position != 10) {
+        colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & color));
+        if (color != currentColor) {
             setBackgroundColor(color);
         }
     }
