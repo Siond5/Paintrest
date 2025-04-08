@@ -36,8 +36,8 @@
             android:layout_weight="1"
             android:textSize="16dp"
             style="@style/BoldText"
-            android:layout_marginEnd="10dp"
             android:backgroundTint="@color/button"
+            android:layout_marginEnd="10dp"
             android:text="Cancel" />
 
         <Button

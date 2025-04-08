@@ -1,0 +1,109 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/dialog_background"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/canvas_fg"
+            android:padding="5dp"
+            android:layout_gravity="center">
+
+            <ImageView
+                android:id="@+id/image_preview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  Painting Name:"
+                android:textColor="@color/black"
+                android:layout_marginBottom="5dp" />
+
+            <EditText
+                android:id="@+id/edt_painting_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Painting name"
+                android:inputType="textCapWords|textMultiLine"
+                android:padding="12dp"
+                android:textSize="16sp"
+                android:textColor="@android:color/black"
+                android:textColorHint="@android:color/darker_gray"
+                android:singleLine="false"
+                android:maxLines="2"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/edittext_bg" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  Description: "
+                android:textColor="@color/black"
+                android:layout_marginBottom="5dp" />
+
+            <EditText
+                android:id="@+id/edt_painting_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Description"
+                android:inputType="textCapSentences|textMultiLine"
+                android:padding="12dp"
+                android:textSize="16sp"
+                android:textColor="@android:color/black"
+                android:textColorHint="@android:color/darker_gray"
+                android:singleLine="false"
+                android:maxLines="5"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/edittext_bg" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Buttons below everything and centered -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16dp"
+            style="@style/BoldText"
+            android:backgroundTint="@color/button"
+            android:text="Cancel" />
+
+        <Button
+            android:id="@+id/btn_publish"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Publish"
+            android:textSize="16dp"
+            style="@style/BoldText"
+            android:backgroundTint="@color/button"
+            android:layout_marginStart="12dp" />
+    </LinearLayout>
+</LinearLayout>

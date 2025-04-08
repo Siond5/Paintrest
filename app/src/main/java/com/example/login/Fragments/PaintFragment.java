@@ -1,7 +1,5 @@
 package com.example.login.Fragments;
 
-import static androidx.browser.customtabs.CustomTabsClient.getPackageName;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -9,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -21,18 +20,25 @@ import android.widget.Toast;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
 import com.example.login.Activities.MainActivity;
 import com.example.login.Dialogs.PaintSettingsDialogFragment;
+import com.example.login.Dialogs.PublishDialogFragment;
 import com.example.login.R;
 import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
 public class PaintFragment extends Fragment {
 
@@ -42,9 +48,7 @@ public class PaintFragment extends Fragment {
     private Button btn_undo;
     private Button btn_redo;
 
-    public PaintFragment() {
-        // Required empty constructor.
-    }
+    public PaintFragment() {}
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -66,14 +70,16 @@ public class PaintFragment extends Fragment {
             updateUndoRedoButtons();
             updateViewModelStacks();
         });
+
+        // Show the two-option dialog when the user presses the post button.
         btnPost.setOnClickListener(v -> showPostOptions());
+
         paintSettings.setOnClickListener(v -> openSettings());
 
         btn_undo.setOnClickListener(v -> {
             paintView.undo();
             updateUndoRedoButtons();
             updateViewModelStacks();
-            // Reapply global settings from the ViewModel
             if (drawingViewModel.getCurrentTool().getValue() != null) {
                 paintView.reapplyGlobalSettings(
                         drawingViewModel.getBrushColor().getValue(),
@@ -87,7 +93,6 @@ public class PaintFragment extends Fragment {
             paintView.redo();
             updateUndoRedoButtons();
             updateViewModelStacks();
-            // Reapply global settings from the ViewModel
             if (drawingViewModel.getCurrentTool().getValue() != null) {
                 paintView.reapplyGlobalSettings(
                         drawingViewModel.getBrushColor().getValue(),
@@ -97,13 +102,11 @@ public class PaintFragment extends Fragment {
             }
         });
 
-
         paintView.setOnPathRecordedCallback(() -> {
             updateUndoRedoButtons();
             updateViewModelStacks();
         });
 
-        // Restore tool settings from the ViewModel.
         if (drawingViewModel.getBrushSize().getValue() != null)
             paintView.setBrushSize(drawingViewModel.getBrushSize().getValue());
         if (drawingViewModel.getCurrentTool().getValue() != null)
@@ -140,7 +143,6 @@ public class PaintFragment extends Fragment {
         drawingViewModel.setCurrentBitmap(paintView.getBitmap());
         drawingViewModel.setBrushColor(paintView.getBrushColor());
         drawingViewModel.setBrushSize((float) paintView.getBrushSize());
-        // Optionally update the tool as well:
         drawingViewModel.setCurrentTool(paintView.getCurrentTool());
         updateViewModelStacks();
     }
@@ -166,32 +168,50 @@ public class PaintFragment extends Fragment {
             paintView.setBitmap(savedBitmap);
     }
 
+    // Show a dialog with two options: Publish or Share
     private void showPostOptions() {
         String[] options = {"Publish the paint", "Share the paint"};
         new AlertDialog.Builder(getContext())
-                .setTitle("Post painting")
+                .setTitle("Post Painting")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
-                        publishCanvas();
+                        // Open PublishDialogFragment
+                        openPublishDialog();
                     } else if (which == 1) {
+                        // Call the shareImage method
                         shareImage();
                     }
                 })
                 .show();
     }
 
-    private void shareImage() {
-        Bitmap painting = paintView.getBitmap();
-        try {
+    // Create and show the PublishDialogFragment
+    private void openPublishDialog() {
+        PublishDialogFragment publishDialog = PublishDialogFragment.newInstance(paintView.getBitmap());
+        publishDialog.show(getChildFragmentManager(), "publishDialog");
+    }
 
+    // Method to share the painted image
+    private void shareImage() {
+        // Enable drawing cache and capture the current drawing.
+        paintView.setDrawingCacheEnabled(true);
+        Bitmap drawnBitmap = Bitmap.createBitmap(paintView.getDrawingCache());
+        paintView.setDrawingCacheEnabled(false);
+
+        // Create a composite bitmap with a white background for sharing.
+        Bitmap finalBitmap = Bitmap.createBitmap(drawnBitmap.getWidth(), drawnBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas finalCanvas = new Canvas(finalBitmap);
+        finalCanvas.drawColor(Color.WHITE); // Fill with white background.
+        finalCanvas.drawBitmap(drawnBitmap, 0, 0, null);
+
+        try {
             File cachePath = new File(getContext().getCacheDir(), "images");
             if (!cachePath.exists()) {
                 cachePath.mkdirs();
             }
-
             File file = new File(cachePath, "image.png");
             FileOutputStream stream = new FileOutputStream(file);
-            painting.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
             stream.flush();
             stream.close();
 
@@ -202,37 +222,10 @@ public class PaintFragment extends Fragment {
             shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(Intent.createChooser(shareIntent, "Share Image"));
-
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show();
         }
-    }
-
-
-    private void publishCanvas() {
-        paintView.setDrawingCacheEnabled(true);
-        Bitmap bitmap = Bitmap.createBitmap(paintView.getDrawingCache());
-        paintView.setDrawingCacheEnabled(false);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        byte[] data = baos.toByteArray();
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) {
-            Toast.makeText(getActivity(), "You are not logged in", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(getActivity(), MainActivity.class));
-            return;
-        }
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        String filename = "paint_" + System.currentTimeMillis() + ".png";
-        StorageReference canvasRef = storageRef.child("paintings").child(uid).child(filename);
-        canvasRef.putBytes(data)
-                .addOnSuccessListener(taskSnapshot ->
-                        Toast.makeText(getActivity(), "The painting has been successfully Published!", Toast.LENGTH_SHORT).show()
-                )
-                .addOnFailureListener(e ->
-                        Toast.makeText(getActivity(), "Failed to Publish the painting", Toast.LENGTH_SHORT).show()
-                );
     }
 
     private void openSettings() {

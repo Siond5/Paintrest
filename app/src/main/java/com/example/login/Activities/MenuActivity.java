@@ -26,6 +26,7 @@ import com.example.login.Classes.Colors;
 import com.example.login.Classes.MyUser;
 import com.example.login.Fragments.HomeFragment;
 import com.example.login.Fragments.PaintFragment;
+import com.example.login.Fragments.ProfileFragment;
 import com.example.login.Fragments.SettingsFragment;
 import com.example.login.Fragments.UserDetailsFragment;
 import com.example.login.Notification_classes.NotificationReceiver;
@@ -78,7 +79,7 @@ public class MenuActivity extends AppCompatActivity {
                             createFragment(new PaintFragment());
                             return true;
                         } else if (itemId == R.id.menu_profile) {
-                            createFragment(new SettingsFragment());
+                            createFragment(new ProfileFragment());
                             return true;
                         }
                         return false;

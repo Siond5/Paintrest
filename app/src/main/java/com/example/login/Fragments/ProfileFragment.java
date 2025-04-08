@@ -4,25 +4,24 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
+import androidx.fragment.app.Fragment;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.fragment.app.Fragment;
-import androidx.core.content.ContextCompat;
 
 import com.example.login.R;
 
-public class HomeFragment extends Fragment {
 
-    private SharedPreferences sharedPreferences;
+public class ProfileFragment extends Fragment {
 
-    public HomeFragment() {
+
+    public ProfileFragment() {
         // Required empty public constructor
     }
+
+    private SharedPreferences sharedPreferences;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,7 +32,7 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the fragment layout
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        View view = inflater.inflate(R.layout.fragment_profile, container, false);
         loadColor(getActivity(), view);
 
         return view;

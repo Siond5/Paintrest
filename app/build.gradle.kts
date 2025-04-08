@@ -49,6 +49,7 @@ dependencies {
 
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
     implementation("com.github.bumptech.glide:glide:4.15.1")
+    implementation(libs.firebase.database)
 
     annotationProcessor ("com.github.yalantis:ucrop:2.2.8")
     implementation ("com.github.yalantis:ucrop:2.2.8")
