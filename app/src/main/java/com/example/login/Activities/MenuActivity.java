@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -22,6 +23,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.login.Classes.Colors;
 import com.example.login.Classes.MyUser;
 import com.example.login.Fragments.HomeFragment;
@@ -37,7 +40,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.File;
 import java.util.Calendar;
 
 public class MenuActivity extends AppCompatActivity {
@@ -50,6 +56,7 @@ public class MenuActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private boolean isUserLoaded = false;
     private boolean isColorLoaded = false;
+    private boolean isProfileImageLoaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,13 +125,15 @@ public class MenuActivity extends AppCompatActivity {
                 checkLoadingComplete();
             });
 
+            downloadProfileImage(activity);
+
         } catch (Exception e) {
             Toast.makeText(activity, "Failed to load data", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void checkLoadingComplete() {
-        if (isUserLoaded && isColorLoaded) {
+        if (isUserLoaded && isColorLoaded && isProfileImageLoaded) {
             progressBar.setVisibility(View.GONE);
             bottomNavigationView.setVisibility(View.VISIBLE);
             createFragment(new HomeFragment());
@@ -184,5 +193,25 @@ public class MenuActivity extends AppCompatActivity {
        // alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),dayInMillis, pendingIntent);
     }
 
+    public void downloadProfileImage(AppCompatActivity activity) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        String uid = fbAuth.getCurrentUser().getUid();
+        StorageReference storageRef = storage.getReference().child("profile_images").child(uid + ".jpg");
+        SharedPreferences sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE).edit();
+        // Create a local file in the cache directory; change location as needed.
+        File localFile = new File(this.getCacheDir(), "profile_" + System.currentTimeMillis() + ".jpg");
+        storageRef.getFile(localFile)
+                .addOnSuccessListener(taskSnapshot -> {
+                            Uri localUri = Uri.fromFile(localFile);
+                            String photoUri = localUri.toString();
+                            editor.putString("profileImageUri", photoUri);
+                            editor.apply();
+                        })
+         .addOnFailureListener(e ->        sharedPreferences.edit().remove("profileImageUri").apply() );
 
+        isProfileImageLoaded = true;
+        checkLoadingComplete();
+    }
 }

@@ -59,6 +59,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     public UserDetailsFragment() {
         // Required empty public constructor
     }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_user_details, container, false);
@@ -75,7 +76,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnChangePassword = view.findViewById(R.id.btnChangePassword);
         btnUserUi = view.findViewById(R.id.btnUserUi);
 
-
         loadColor(getActivity(), view);
         loadDetails();
         loadProfilePicture();
@@ -86,7 +86,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         ivProfilePicture.setOnClickListener(v -> showImageOptions());
         btnChangePassword.setOnClickListener(this);
         btnUserUi.setOnClickListener(this);
-
 
         setUpTextWatchers();
         return view;
@@ -123,6 +122,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             public void afterTextChanged(Editable editable) {}
         };
     }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -192,7 +192,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             String phone = etDetailsPhone.getText().toString();
             String yobStr = etDetailsYOB.getText().toString();
 
-            //valid fields by boolean veriables
+            // valid fields by boolean variables
             boolean isFirstNameValid = validateName(firstName, "first name");
             boolean isLastNameValid = validateName(lastName, "last name");
             boolean isPhoneValid = validatePhone(phone);
@@ -320,6 +320,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
     }
 
+    // Modified Crop Image Launcher which now triggers an upload to Firebase Storage.
     private ActivityResultLauncher<Intent> cropImageLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
@@ -331,7 +332,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                         if(resultUri != null) {
                             profileImageUri = resultUri;
                             ivProfilePicture.setImageURI(profileImageUri);
-                            savePictureToSharedPreferences();
+                            uploadProfileImage(profileImageUri);
                         }
                     } else {
                         Toast.makeText(getActivity(), "Cropping failed. Please try again.", Toast.LENGTH_SHORT).show();
@@ -340,21 +341,34 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             }
     );
 
-    private void cropImage(Uri sourceUri) {
-        // Create a destination URI for the cropped image in the cache directory
-        Uri destinationUri = Uri.fromFile(new File(getActivity().getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
+    private void uploadProfileImage(Uri imageUri) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        String uid = fbAuth.getCurrentUser().getUid();
+        StorageReference storageRef = storage.getReference().child("profile_images").child(uid + ".jpg");
 
-        // Setup UCrop options: here enforcing a square crop; adjust as needed
-        UCrop uCrop = UCrop.of(sourceUri, destinationUri)
-                .withAspectRatio(1, 1)       // Enforce 1:1 aspect ratio; remove if you want free cropping.
-                .withMaxResultSize(800, 800);  // Set maximum result dimensions
-
-        // Launch UCrop activity
-        Intent uCropIntent = uCrop.getIntent(getActivity());
-        cropImageLauncher.launch(uCropIntent);
+        storageRef.putFile(imageUri)
+                .addOnSuccessListener(taskSnapshot ->
+                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                                    saveProfileImageUrlToSharedPreferences(downloadUri.toString());
+                                    Toast.makeText(getActivity(), "Image uploaded successfully.", Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(getActivity(), "Something went wrong, try again later.", Toast.LENGTH_SHORT).show())
+                )
+                .addOnFailureListener(e ->
+                        Toast.makeText(getActivity(), "Image upload failed.", Toast.LENGTH_SHORT).show());
     }
 
-    private ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
+    private void saveProfileImageUrlToSharedPreferences(String url) {
+        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("profileImageUrl", url);
+        editor.apply();
+    }
+
+
+    private final ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
                 @Override
@@ -373,8 +387,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             }
     );
 
-
-
     private final ActivityResultLauncher<Intent> pickImageFromGallery = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -390,15 +402,18 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             }
     );
 
-    private void savePictureToSharedPreferences()
-    {
-        if (profileImageUri!=null)
-        {sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        //editor.putString("profileImage", base64Photo);
-        editor.putString("profileImageUri", profileImageUri.toString());
-        editor.apply();
-        }
+    private void cropImage(Uri sourceUri) {
+        // Create a destination URI for the cropped image in the cache directory
+        Uri destinationUri = Uri.fromFile(new File(getActivity().getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
+
+        // Setup UCrop options: enforcing a square crop; adjust as needed
+        UCrop uCrop = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1, 1)       // Enforce 1:1 aspect ratio; remove if you want free cropping.
+                .withMaxResultSize(800, 800);  // Set maximum result dimensions
+
+        // Launch UCrop activity
+        Intent uCropIntent = uCrop.getIntent(getActivity());
+        cropImageLauncher.launch(uCropIntent);
     }
 
     private byte[] convertImageToByteArray(Uri imageUri) {
@@ -429,7 +444,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
     }
 
-
     private void deletePhoto() {
         if (profileImageUri == null) {
             Toast.makeText(getActivity(), "No profile photo to delete", Toast.LENGTH_SHORT).show();
@@ -458,7 +472,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         profileImageUri = null;
     }
 
-
     private void viewPhoto() {
         if (profileImageUri != null) {
             Intent intent = new Intent(getActivity(), ViewPhotoActivity.class);
@@ -479,7 +492,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             int yob = sharedPreferences.getInt("yob", -1);
 
             if (firstName != null && lastName != null && phone != null && yob != -1) {
-
                 etDetailsEmail.setText(fbAuth.getCurrentUser().getEmail());
                 etDetailsFirstName.setText(firstName);
                 etDetailsLastName.setText(lastName);
@@ -496,6 +508,4 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         int color = sharedPreferences.getInt("color", R.color.Default);
         view.setBackgroundColor(color);
     }
-
-
 }

@@ -22,6 +22,9 @@
         android:theme="@style/Theme.Login"
         tools:targetApi="31">
         <activity
+            android:name=".Activities.ViewPaintingActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activities.UiSettingsActivity"
             android:exported="false" />
         <activity

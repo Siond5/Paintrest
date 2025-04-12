@@ -1,12 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     tools:context=".Fragments.ProfileFragment">
 
+    <!-- Profile Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:orientation="horizontal">
 
+        <!-- Circular Profile Image -->
+        <ImageView
+            android:id="@+id/profileImage"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/default_profile"
+            android:background="@drawable/circle_background" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/FullName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Full Name"
+                android:textSize="25sp"
+                style="@style/BoldText"
+                android:layout_marginBottom="15dp" />
+
+            <TextView
+                android:id="@+id/Description"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/BoldText"
+                android:text="Description" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/numOfPaintings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="-4dp"
+        android:background="@drawable/square_bg"
+        android:gravity="center"
+        android:padding="8dp"
+        android:text="paintings - x"
+        android:textSize="15sp"
+        style="@style/BoldText" />
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/square_bg"
+    android:visibility="visible"
+    android:padding="10dp"
+    >
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/paintingsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+
+</ScrollView>
+
+    <TextView
+        android:id="@+id/emptyPlaceholder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textColor="@color/black"
+        android:background="@drawable/square_bg"
+        android:text="You haven't painted anything yet! Get creative!"
+        android:textSize="16sp"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone"/>
 
 </LinearLayout>

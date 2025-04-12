@@ -21,24 +21,16 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.login.Activities.MainActivity;
 import com.example.login.Dialogs.PaintSettingsDialogFragment;
 import com.example.login.Dialogs.PublishDialogFragment;
 import com.example.login.R;
 import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Locale;
+
 
 public class PaintFragment extends Fragment {
 
@@ -178,8 +170,7 @@ public class PaintFragment extends Fragment {
                         // Open PublishDialogFragment
                         openPublishDialog();
                     } else if (which == 1) {
-                        // Call the shareImage method
-                        shareImage();
+                        sharePainting();
                     }
                 })
                 .show();
@@ -191,8 +182,7 @@ public class PaintFragment extends Fragment {
         publishDialog.show(getChildFragmentManager(), "publishDialog");
     }
 
-    // Method to share the painted image
-    private void shareImage() {
+    private void sharePainting() {
         // Enable drawing cache and capture the current drawing.
         paintView.setDrawingCacheEnabled(true);
         Bitmap drawnBitmap = Bitmap.createBitmap(paintView.getDrawingCache());

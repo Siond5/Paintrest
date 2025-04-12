@@ -1,6 +1,5 @@
 package com.example.login.Dialogs;
 
-import android.app.Dialog;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.text.Editable;
@@ -18,8 +17,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
 import com.example.login.R;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -114,7 +111,8 @@ public class PublishDialogFragment extends DialogFragment {
         paintingBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
         byte[] data = baos.toByteArray();
 
-        // Upload to Firebase Storage
+        btnPublish.setClickable(false);
+
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         String filename = "paint_" + System.currentTimeMillis() + ".png";
         StorageReference imageRef = storageRef.child("paintings")
