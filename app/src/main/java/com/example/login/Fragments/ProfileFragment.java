@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,7 +42,7 @@ public class ProfileFragment extends Fragment {
     private ImageView profileImage;
     private RecyclerView paintingsRecyclerView;
     private TextView emptyPlaceholder;
-
+    private View scrollView;
     private List<Painting> paintings = new ArrayList<>();
     private PaintingItemView adapter;
 
@@ -62,7 +60,7 @@ public class ProfileFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
-        loadColor(getActivity(), view);
+        loadBgColor(getActivity(), view);
 
         numOfPaintings = view.findViewById(R.id.numOfPaintings);
         paintingsRecyclerView = view.findViewById(R.id.paintingsRecyclerView);
@@ -70,6 +68,7 @@ public class ProfileFragment extends Fragment {
         FullName = view.findViewById(R.id.FullName);
         Description = view.findViewById(R.id.Description);
         profileImage = view.findViewById(R.id.profileImage);
+        scrollView = view.findViewById(R.id.scrollView);
 
         loadUserDetails();
 
@@ -145,22 +144,25 @@ public class ProfileFragment extends Fragment {
                     paintings.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         String url = doc.getString("imageUrl");
+                        String uid = doc.getString("uid");
                         String name = doc.getString("name");
                         String description = doc.getString("description");
+                        Boolean isAnonymous = doc.getBoolean("isAnonymous");
+                        boolean anonymous = (isAnonymous != null) ? isAnonymous : false;
                         long creationTime = doc.getTimestamp("date") != null ?
                                 doc.getTimestamp("date").toDate().getTime() : 0;
                         int likes = doc.getLong("likes") != null ?
                                 doc.getLong("likes").intValue() : 0;
                         String docId = doc.getId(); // Get the Firestore document ID
                         if (url != null) {
-                            paintings.add(new Painting(url, docId, name, description, creationTime, likes));
+                            paintings.add(new Painting(url, docId, uid, name, description, creationTime, likes, anonymous, ""));
                         }
                     }
                     numOfPaintings.setText("paintings - " + paintings.size());
 
                     if (paintings.isEmpty()) {
                         emptyPlaceholder.setVisibility(View.VISIBLE);
-                        paintingsRecyclerView.setVisibility(View.GONE);
+                        scrollView.setVisibility(View.GONE);
                     } else {
                         emptyPlaceholder.setVisibility(View.GONE);
                         paintingsRecyclerView.setVisibility(View.VISIBLE);
@@ -172,9 +174,9 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    public void loadColor(Activity activity, View view) {
+    public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        int color = sharedPreferences.getInt("color", getResources().getColor(R.color.Default));
+        int color = sharedPreferences.getInt("bgColor", getResources().getColor(R.color.Default));
         view.setBackgroundColor(color);
     }
 }

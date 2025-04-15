@@ -64,6 +64,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/square_bg"
+    android:id="@+id/scrollView"
     android:visibility="visible"
     android:padding="10dp"
     >
@@ -82,11 +83,11 @@
         android:layout_height="match_parent"
         android:textColor="@color/black"
         android:background="@drawable/square_bg"
-        android:text="You haven't painted anything yet! Get creative!"
+        android:text="You haven't painted anything yet, Get creative!"
         android:textSize="16sp"
         android:layout_gravity="center"
         android:gravity="center"
         android:padding="16dp"
-        android:visibility="gone"/>
+        android:visibility="visible"/>
 
 </LinearLayout>

@@ -10,33 +10,27 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import android.app.Activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.login.Classes.Colors;
 import com.example.login.Classes.MyUser;
 import com.example.login.Fragments.HomeFragment;
 import com.example.login.Fragments.PaintFragment;
 import com.example.login.Fragments.ProfileFragment;
-import com.example.login.Fragments.SettingsFragment;
 import com.example.login.Fragments.UserDetailsFragment;
 import com.example.login.Notification_classes.NotificationReceiver;
 import com.example.login.R;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
@@ -51,7 +45,7 @@ public class MenuActivity extends AppCompatActivity {
     SharedPreferences sp;
     private MyUser user;
     private Colors color;
-    private int bgc;
+    private int bgColor, btnColor;
     private int itemId;
     private ProgressBar progressBar;
     private boolean isUserLoaded = false;
@@ -117,9 +111,11 @@ public class MenuActivity extends AppCompatActivity {
 
             store.collection("colors").document(uid).get().addOnSuccessListener(documentSnapshot -> {
                 color = documentSnapshot.toObject(Colors.class);
-                bgc = (color != null) ? color.getBackgroundColor() : 0;
+                bgColor = (color != null) ? color.getBackgroundColor() : getContextColor(R.color.Default);
+                btnColor = (color != null) ? color.getButtonColor() : getContextColor(R.color.button);
                 SharedPreferences.Editor editor = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE).edit();
-                editor.putInt("color", bgc);
+                editor.putInt("bgColor", bgColor);
+                editor.putInt("btnColor", btnColor);
                 editor.apply();
                 isColorLoaded = true;
                 checkLoadingComplete();
@@ -213,5 +209,9 @@ public class MenuActivity extends AppCompatActivity {
 
         isProfileImageLoaded = true;
         checkLoadingComplete();
+    }
+
+    public int getContextColor(int color) {
+        return ContextCompat.getColor(this, color);
     }
 }

@@ -1,5 +1,7 @@
 package com.example.login.Dialogs;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.text.Editable;
@@ -8,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -35,6 +38,8 @@ public class PublishDialogFragment extends DialogFragment {
     private EditText edtPaintingDescription;
     private Button btnPublish;
     private Button btnCancel;
+    private CheckBox isAnonymous;
+    private boolean IsAnonymous;
 
     // Factory method to create a new instance passing the Bitmap
     public static PublishDialogFragment newInstance(Bitmap bitmap) {
@@ -65,6 +70,7 @@ public class PublishDialogFragment extends DialogFragment {
         edtPaintingDescription = view.findViewById(R.id.edt_painting_description);
         btnPublish = view.findViewById(R.id.btn_publish);
         btnCancel = view.findViewById(R.id.btn_cancel);
+        isAnonymous = view.findViewById(R.id.isAnonymous);
 
         // Set the preview image
         if (paintingBitmap != null) {
@@ -98,6 +104,7 @@ public class PublishDialogFragment extends DialogFragment {
     }
 
     private void publishPainting() {
+        IsAnonymous = this.isAnonymous.isChecked();
         final String paintingName = edtPaintingName.getText().toString().trim();
         final String paintingDescription = edtPaintingDescription.getText().toString().trim();
 
@@ -134,7 +141,7 @@ public class PublishDialogFragment extends DialogFragment {
     }
 
     private void saveMetadata(String name, String description, String imageUrl) {
-        // Build a map of painting metadata
+        // Build a map of painting metadata, including the new authorName field.
         Map<String, Object> paintingData = new HashMap<>();
         paintingData.put("name", name);
         paintingData.put("description", description);
@@ -142,6 +149,7 @@ public class PublishDialogFragment extends DialogFragment {
         paintingData.put("date", Timestamp.now());
         paintingData.put("likes", 0);
         paintingData.put("imageUrl", imageUrl);
+        paintingData.put("isAnonymous", IsAnonymous);
 
         FirebaseFirestore.getInstance().collection("paintings")
                 .add(paintingData)

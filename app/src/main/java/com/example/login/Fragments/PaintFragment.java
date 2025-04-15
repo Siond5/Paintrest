@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -39,13 +40,14 @@ public class PaintFragment extends Fragment {
     private DrawingViewModel drawingViewModel;
     private Button btn_undo;
     private Button btn_redo;
+    private SharedPreferences sharedPreferences;
 
     public PaintFragment() {}
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_paint, container, false);
-        loadColor(getActivity(), view);
+        loadBgColor(getActivity(), view);
         FrameLayout canvasContainer = view.findViewById(R.id.canvas_container);
         drawingViewModel = new ViewModelProvider(requireActivity()).get(DrawingViewModel.class);
         paintView = new PaintView(getActivity());
@@ -235,9 +237,29 @@ public class PaintFragment extends Fragment {
         );
     }
 
-    public void loadColor(Activity activity, View view) {
-        SharedPreferences sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        int color = sharedPreferences.getInt("color", R.color.Default);
+    public void loadBgColor(Activity activity, View view) {
+        sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        int color = sharedPreferences.getInt("bgColor", R.color.Default);
         view.setBackgroundColor(color);
+        loadBtnColor((ViewGroup) view);
+    }
+
+    private void loadBtnColor(ViewGroup rootView) {
+        int color = sharedPreferences.getInt("btnColor", R.color.button);
+        ColorStateList buttonColor = ColorStateList.valueOf(color);
+
+        for (int i = 0; i < rootView.getChildCount(); i++) {
+            View childView = rootView.getChildAt(i);
+
+            // If the view is a button, apply the tint
+            if (childView instanceof Button) {
+                ((Button) childView).setBackgroundTintList(buttonColor);
+            }
+
+            // If the view is a ViewGroup, recursively apply the tint to its children
+            else if (childView instanceof ViewGroup) {
+                loadBtnColor((ViewGroup) childView);
+            }
+        }
     }
 }

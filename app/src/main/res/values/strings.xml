@@ -6,7 +6,7 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string-array name="color_array">
+    <string-array name="BgColor_array">
         <item>Default</item>
         <item>White</item>
         <item>Red</item>
@@ -19,7 +19,14 @@
         <item>Pink</item>
         <item>Custom</item>
     </string-array>
-    <!-- TODO: Remove or change this placeholder text -->
+
+    <string-array name="BtnColor_array">
+        <item>Light Gray</item>
+        <item>Purple</item>
+        <item>Custom</item>
+    </string-array>
+
+
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
 

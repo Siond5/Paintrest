@@ -45,16 +45,37 @@
         android:textSize="20sp" />
 
     <Spinner
-        android:id="@+id/set_color"
+        android:id="@+id/set_bgColor"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="5dp"
         android:layout_marginStart="5dp"
-        android:entries="@array/color_array"
+        android:entries="@array/BgColor_array"
         android:background="@drawable/spinner_bg"
         />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="5dp"
+        android:text="Change button color: "
+        style="@style/BoldText"
+        android:textSize="20sp" />
+
+    <Spinner
+        android:id="@+id/set_btnColor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="5dp"
+        android:layout_marginStart="5dp"
+        android:entries="@array/BtnColor_array"
+        android:background="@drawable/spinner_bg"
+        />
 
 </LinearLayout>

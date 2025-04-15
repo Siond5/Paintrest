@@ -1,7 +1,6 @@
 package com.example.login.Activities;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -27,13 +26,13 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class UiSettingsActivity extends AppCompatActivity {
 
-    Spinner set_color;
+    Spinner set_bgColor, set_btnColor;
     SharedPreferences sp;
     ImageView btnReturn;
     View view;
     // We'll store the color array with a placeholder as the first element.
-    String[] colorsWithPlaceholder;
-    ArrayAdapter<String> adapter; // keep reference to adapter
+    String[] bgColorsWithPlaceholder, btnColorsWithPlaceholder;
+    ArrayAdapter<String> adapter1, adapter2; // keep reference to adapter
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,35 +45,64 @@ public class UiSettingsActivity extends AppCompatActivity {
             return insets;
         });
         view = findViewById(R.id.main);
-        set_color = findViewById(R.id.set_color);
+        set_bgColor = findViewById(R.id.set_bgColor);
+        set_btnColor = findViewById(R.id.set_btnColor);
         btnReturn = findViewById(R.id.btnReturn);
         btnReturn.setOnClickListener(v -> finish());
 
-        String[] originalColors = getResources().getStringArray(R.array.color_array);
+        String[] originalBgColors = getResources().getStringArray(R.array.BgColor_array);
+        String[] originalBtnColors = getResources().getStringArray(R.array.BtnColor_array);
         // Create the placeholder array with one extra slot.
-        colorsWithPlaceholder = new String[originalColors.length + 1];
+        bgColorsWithPlaceholder = new String[originalBgColors.length + 1];
+        btnColorsWithPlaceholder = new String[originalBtnColors.length + 1];
         // Initially, set the first element to a default hex value (e.g. white).
-        colorsWithPlaceholder[0] = " ";
-        System.arraycopy(originalColors, 0, colorsWithPlaceholder, 1, originalColors.length);
+        bgColorsWithPlaceholder[0] = " ";
+        btnColorsWithPlaceholder[0]= " ";
+        System.arraycopy(originalBgColors, 0, bgColorsWithPlaceholder, 1, originalBgColors.length);
+        System.arraycopy(originalBtnColors, 0, btnColorsWithPlaceholder, 1, originalBtnColors.length);
 
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, colorsWithPlaceholder);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        set_color.setAdapter(adapter);
+        adapter1 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, bgColorsWithPlaceholder);
+        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
+        adapter2 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, btnColorsWithPlaceholder);
+        adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        set_bgColor.setAdapter(adapter1);
+        set_btnColor.setAdapter(adapter2);
         sp = this.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
 
-        loadColor();
-        changeSelectionBasedOnColor();
+        loadBgColor();
+        changeSelectionBasedOnBgColor();
+        changeSelectionBasedOnBtnColor();
 
-        set_color.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        set_bgColor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 // If the placeholder (position 0) is selected, do nothing.
                 if (position == 0) return;
-                changeColorBasedOnSelection(position);
+                changeBgColorBasedOnSelection(position);
                 // After processing, reset selection back to placeholder so the same option can be chosen later.
                 //set_color.setSelection(0);
             }
+
+
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+            }
+        });
+
+        set_btnColor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                // If the placeholder (position 0) is selected, do nothing.
+                if (position == 0) return;
+                changeBtnColorBasedOnSelection(position);
+                // After processing, reset selection back to placeholder so the same option can be chosen later.
+                //set_color.setSelection(0);
+            }
+
+
 
             @Override
             public void onNothingSelected(AdapterView<?> parentView) {
@@ -82,7 +110,7 @@ public class UiSettingsActivity extends AppCompatActivity {
         });
     }
 
-    private void changeSelectionBasedOnColor() {
+    private void changeSelectionBasedOnBgColor() {
         ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
         int currentColor = colorDrawable.getColor();
 
@@ -102,19 +130,41 @@ public class UiSettingsActivity extends AppCompatActivity {
         
         for (int i = 0; i < colorArray.length; i++) {
             if (currentColor == ContextCompat.getColor(this, colorArray[i])) {
-                colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));                set_color.setSelection(i + 1);
+                bgColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));                set_bgColor.setSelection(i + 1);
                 return;
             }
         }
-            colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));
-            set_color.setSelection(0);
+        bgColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));
+        set_bgColor.setSelection(0);
 
     }
 
-    private void changeColorBasedOnSelection(int position) {
+    private void changeSelectionBasedOnBtnColor() {
+        int currentColor = sp.getInt("btnColor", R.color.button);
+
+        int[] colorArray = {
+                R.color.button,
+                R.color.button2,
+        };
+
+
+        for (int i = 0; i < colorArray.length; i++) {
+            if (currentColor ==  ContextCompat.getColor(this, colorArray[i])) {
+                btnColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));
+                set_btnColor.setSelection(i + 1);
+                return;
+            }
+        }
+        btnColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & currentColor));
+        set_btnColor.setSelection(0);
+
+    }
+
+
+    private void changeBgColorBasedOnSelection(int position) {
         // Adjust position because position 0 is the placeholder.
         int adjustedPosition = position - 1;
-        int color = sp.getInt("color", R.color.Default);
+        int color = sp.getInt("bGColor", R.color.Default);
         switch (adjustedPosition) {
             case 0:
                 color = getContextColor(R.color.Default);
@@ -151,10 +201,10 @@ public class UiSettingsActivity extends AppCompatActivity {
                 ColorPickerDialog.show(this, color, selectedColor -> {
                     setBackgroundColor(selectedColor);
                     // Update the placeholder to show the custom hex value.
-                    colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & selectedColor));
-                    adapter.notifyDataSetChanged();
+                    bgColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & selectedColor));
+                    adapter1.notifyDataSetChanged();
                     // Set spinner selection to the updated placeholder.
-                    set_color.setSelection(0);
+                    set_bgColor.setSelection(0);
                 });
                 return;
             default:
@@ -163,29 +213,75 @@ public class UiSettingsActivity extends AppCompatActivity {
 
         ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
         int currentColor = colorDrawable.getColor();
-        colorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & color));
+        bgColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & color));
         if (color != currentColor) {
             setBackgroundColor(color);
         }
     }
 
-    private void setBackgroundColor(int color) {
-        view.setBackgroundColor(color);
+    private void changeBtnColorBasedOnSelection(int position){
+        int adjustedPosition = position - 1;
+        int color = sp.getInt("btnColor", R.color.Default);
+        switch (adjustedPosition) {
+            case 0:
+                color = getContextColor(R.color.button);
+                break;
+            case 1:
+                color = getContextColor(R.color.button2);
+                break;
+                case 2:
+                    ColorPickerDialog.show(this, color, selectedColor -> {
+
+                        setBtnColor(selectedColor);
+                        // Update the placeholder to show the custom hex value.
+                        btnColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & selectedColor));
+                        adapter2.notifyDataSetChanged();
+                        // Set spinner selection to the updated placeholder.
+                        set_btnColor.setSelection(0);
+                    });
+                    return;
+            default:
+                color = getContextColor(R.color.button);
+        }
+        btnColorsWithPlaceholder[0] = String.format("#%06X", (0xFFFFFF & color));
+
+        if (color != sp.getInt("btnColor", R.color.button))
+            setBtnColor(color);
+
+    }
+
+    private void setBackgroundColor(int bgColor) {
+        view.setBackgroundColor(bgColor);
         SharedPreferences.Editor editor = sp.edit();
-        editor.putInt("color", color);
+        editor.putInt("bgColor", bgColor);
         editor.apply();
 
-        Toast.makeText(this, "Color Changed", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Background Color Changed", Toast.LENGTH_SHORT).show();
 
-        Colors color1 = new Colors(color);
+        int btnColor = sp.getInt("btnColor", R.color.Default);
+        Colors color1 = new Colors(bgColor, btnColor);
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         FirebaseFirestore store = FirebaseFirestore.getInstance();
         store.collection("colors")
                 .document(fbAuth.getCurrentUser().getUid()).set(color1);
     }
 
-    public void loadColor() {
-        int color = sp.getInt("color", R.color.Default);
+    private void setBtnColor(int btnColor) {
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putInt("btnColor", btnColor);
+        editor.apply();
+
+        Toast.makeText(this, "Button Color Changed", Toast.LENGTH_SHORT).show();
+        int bgColor = sp.getInt("bgColor", R.color.Default);
+        Colors color1 = new Colors(bgColor, btnColor);
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        FirebaseFirestore store = FirebaseFirestore.getInstance();
+        store.collection("colors")
+                .document(fbAuth.getCurrentUser().getUid()).set(color1);
+    }
+
+    public void loadBgColor() {
+        int color = sp.getInt("bgColor", R.color.Default);
         view.setBackgroundColor(color);
     }
 

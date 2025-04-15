@@ -76,7 +76,17 @@
                 android:maxLines="5"
                 android:layout_marginBottom="16dp"
                 android:background="@drawable/edittext_bg" />
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="publish as anonymous"
+                android:id="@+id/isAnonymous"
+                android:textColor="@android:color/black"
+                />
         </LinearLayout>
+
+
     </LinearLayout>
 
     <!-- Buttons below everything and centered -->

@@ -4,9 +4,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".Fragments.HomeFragment">
+    android:padding="5dp"
+    tools:context=".Fragments.HomeFragment"
+    >
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView"
+        android:visibility="visible"
+        android:padding="1dp"
+        >
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/paintingsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+
+    </ScrollView>
 
 </LinearLayout>

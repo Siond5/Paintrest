@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp"
+        >
+
+        <!-- Row for User details -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/userPhoto"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/default_profile"
+                android:background="@drawable/circle_background"
+                android:adjustViewBounds="true"/>
+
+            <TextView
+                android:id="@+id/userName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Full Name"
+                style="@style/BoldText"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/paintingImage"
+            android:layout_width="match_parent"
+            android:layout_height="450dp"
+            android:scaleType="centerCrop"
+            android:adjustViewBounds="true" />
+
+
+        <!-- Painting Name -->
+        <TextView
+            android:id="@+id/paintingName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Painting Name"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginTop="4dp"/>
+
+        <TextView
+            android:id="@+id/description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Painting Description"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginTop="2dp"/>
+
+        <!-- Date of creation -->
+        <TextView
+            android:id="@+id/creationDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Date of creation: dd/MM/yyyy"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginTop="2dp"/>
+
+        <!-- Like button and count -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start|center_vertical"
+            android:paddingTop="4dp">
+
+            <ImageView
+                android:id="@+id/likeButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_like_off" />
+
+            <TextView
+                android:id="@+id/likeCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="0 likes" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
