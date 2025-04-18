@@ -23,6 +23,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.login.Activities.ViewPaintingActivity;
 import com.example.login.Classes.Painting; // Use updated Painting class
+import com.example.login.Dialogs.LoadingManagerDialog;
 import com.example.login.Views.PaintingItemView;
 import com.example.login.R;
 import com.google.firebase.auth.FirebaseAuth;
@@ -136,6 +137,7 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
+        LoadingManagerDialog.showLoading(getActivity(), "Loading paintings...");
         FirebaseFirestore.getInstance().collection("paintings")
                 .whereEqualTo("uid", currentUid)
                 .orderBy("date", Query.Direction.DESCENDING)
@@ -151,11 +153,16 @@ public class ProfileFragment extends Fragment {
                         boolean anonymous = (isAnonymous != null) ? isAnonymous : false;
                         long creationTime = doc.getTimestamp("date") != null ?
                                 doc.getTimestamp("date").toDate().getTime() : 0;
-                        int likes = doc.getLong("likes") != null ?
-                                doc.getLong("likes").intValue() : 0;
+                        int likes = doc.getLong("likes") != null ? doc.getLong("likes").intValue() : 0;
                         String docId = doc.getId(); // Get the Firestore document ID
+
+                        // Get the likedBy list
+                        List<String> likedBy = (List<String>) doc.get("likedBy");
+
                         if (url != null) {
-                            paintings.add(new Painting(url, docId, uid, name, description, creationTime, likes, anonymous, ""));
+                            Painting painting = new Painting(url, docId, uid, name, description, creationTime, likes, anonymous, "");
+                            painting.setLikedBy(likedBy); // Set the likedBy list
+                            paintings.add(painting);
                         }
                     }
                     numOfPaintings.setText("paintings - " + paintings.size());
@@ -168,8 +175,10 @@ public class ProfileFragment extends Fragment {
                         paintingsRecyclerView.setVisibility(View.VISIBLE);
                         adapter.notifyDataSetChanged();
                     }
+                    LoadingManagerDialog.hideLoading();
                 })
                 .addOnFailureListener(e -> {
+                    LoadingManagerDialog.hideLoading();
                     Toast.makeText(getContext(), "Failed to load paintings", Toast.LENGTH_SHORT).show();
                 });
     }

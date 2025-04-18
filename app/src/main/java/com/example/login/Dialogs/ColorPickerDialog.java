@@ -2,6 +2,8 @@ package com.example.login.Dialogs;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,6 +13,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -78,6 +81,9 @@ public class ColorPickerDialog {
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
+        loadBtnColor((ViewGroup) dialogView, context);
+
+
         dialog.show();
     }
 
@@ -142,4 +148,23 @@ public class ColorPickerDialog {
     private static void updatePreviewBox(View previewBox, float[] hsv) {
         previewBox.setBackgroundColor(Color.HSVToColor(hsv));
     }
+
+    // Inside the PaintSettingsDialogFragment class
+
+    private static void loadBtnColor(ViewGroup rootView, Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+
+        int color = sharedPreferences.getInt("btnColor", R.color.button);
+        ColorStateList buttonColor = ColorStateList.valueOf(color);
+
+        for (int i = 0; i < rootView.getChildCount(); i++) {
+            View childView = rootView.getChildAt(i);
+            if (childView instanceof Button) {
+                ((Button) childView).setBackgroundTintList(buttonColor);
+            } else if (childView instanceof ViewGroup) {
+                loadBtnColor((ViewGroup) childView, context);
+            }
+        }
+    }
+
 }

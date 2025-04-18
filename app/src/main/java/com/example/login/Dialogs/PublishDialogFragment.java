@@ -2,6 +2,7 @@ package com.example.login.Dialogs;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.text.Editable;
@@ -80,6 +81,8 @@ public class PublishDialogFragment extends DialogFragment {
         btnPublish.setOnClickListener(v -> publishPainting());
         btnCancel.setOnClickListener(v -> dismiss());
         edtPaintingName.addTextChangedListener(createValidationWatcher());
+        loadBtnColor((ViewGroup) view);
+
         return view;
     }
 
@@ -104,6 +107,8 @@ public class PublishDialogFragment extends DialogFragment {
     }
 
     private void publishPainting() {
+        LoadingManagerDialog.showLoading(getActivity(), "Publishing painting...");
+
         IsAnonymous = this.isAnonymous.isChecked();
         final String paintingName = edtPaintingName.getText().toString().trim();
         final String paintingDescription = edtPaintingDescription.getText().toString().trim();
@@ -131,11 +136,15 @@ public class PublishDialogFragment extends DialogFragment {
                         imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                             String downloadUrl = uri.toString();
                             saveMetadata(paintingName, paintingDescription, downloadUrl);
+                            LoadingManagerDialog.hideLoading();
                         }).addOnFailureListener(e -> {
                             Toast.makeText(getContext(), "Failed to retrieve image URL", Toast.LENGTH_SHORT).show();
+                            LoadingManagerDialog.hideLoading();
                         })
+
                 )
                 .addOnFailureListener(e -> {
+                    LoadingManagerDialog.hideLoading();
                     Toast.makeText(getContext(), "Failed to upload image", Toast.LENGTH_SHORT).show();
                 });
     }
@@ -161,4 +170,24 @@ public class PublishDialogFragment extends DialogFragment {
                     Toast.makeText(getContext(), "Failed to save painting data", Toast.LENGTH_SHORT).show();
                 });
     }
+
+    private void loadBtnColor(ViewGroup rootView) {
+        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        int color = sharedPreferences.getInt("btnColor", R.color.button);
+        ColorStateList buttonColor = ColorStateList.valueOf(color);
+
+        for (int i = 0; i < rootView.getChildCount(); i++) {
+            View childView = rootView.getChildAt(i);
+
+            // If the view is a button, apply the tint
+            if (childView instanceof Button) {
+                ((Button) childView).setBackgroundTintList(buttonColor);
+            }
+
+            // If the view is a ViewGroup, recursively apply the tint to its children
+            else if (childView instanceof ViewGroup) {
+                loadBtnColor((ViewGroup) childView);
+            }
+        }
+        }
 }

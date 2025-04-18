@@ -31,7 +31,6 @@ public class PaintView extends View {
     private Canvas bitmapCanvas;
     private float startX, startY, endX, endY;
     private boolean isDrawingLine = false;
-    private boolean backgroundSet = false; // Flag to ensure white background is set once.
 
     // Undo and redo stacks.
     private Deque<PaintPath> paintPaths = new ArrayDeque<>();
@@ -66,10 +65,8 @@ public class PaintView extends View {
         if (bitmap == null) {
             bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             bitmapCanvas = new Canvas(bitmap);
-            if (!backgroundSet) {
-                bitmap.eraseColor(Color.WHITE);
-                backgroundSet = true;
-            }
+            // Fill with white background initially.
+            bitmap.eraseColor(Color.WHITE);
         } else {
             Bitmap newBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             Canvas newCanvas = new Canvas(newBitmap);
@@ -96,7 +93,7 @@ public class PaintView extends View {
 
         if ("Fill".equals(currentTool)) {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                floodFill((int)x, (int)y, brushColor);
+                floodFill((int) x, (int) y, brushColor);
                 Bitmap fillSnapshot = bitmap.copy(bitmap.getConfig(), true);
                 recordFill(fillSnapshot);
                 invalidate();
@@ -170,30 +167,22 @@ public class PaintView extends View {
         return fillAction;
     }
 
-    // Clears the canvas and records a clear action.
+    // Clears the canvas (sets white background) and records a clear action.
     public void clearCanvasAndRecord() {
-        List<PaintPath> backup = new ArrayList<>(paintPaths);
         if (bitmapCanvas != null) {
-            bitmapCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            // Clear to white.
+            bitmapCanvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
         }
+        // Push a clear marker; note that we do not wipe out previous actions so they remain in our undo history.
         PaintPath clearMarker = new PaintPath(new Path(), brushColor, brushSize, "clear");
-        clearMarker.backup = backup;
         paintPaths.push(clearMarker);
         redoPaths.clear();
         if (onPathRecordedCallback != null) {
             onPathRecordedCallback.run();
         }
+        rebuildBitmap();
         invalidate();
     }
-
-    // Add this method at the end of PaintView.java
-    public void reapplyGlobalSettings(int globalColor, float globalSize, String globalTool) {
-        this.brushColor = globalColor;
-        this.brushSize = globalSize;
-        this.currentTool = globalTool;
-        updateBrush(); // This method updates the internal Paint object and calls invalidate()
-    }
-
 
     // Undo: remove the last action.
     public void undo() {
@@ -215,7 +204,7 @@ public class PaintView extends View {
         }
     }
 
-    // New setter to restore the redo stack.
+    // Setter to restore the redo stack.
     public void setRedoStack(List<PaintPath> stack) {
         redoPaths.clear();
         if (stack != null) {
@@ -223,23 +212,28 @@ public class PaintView extends View {
         }
     }
 
-    // Rebuilds the bitmap by replaying actions in order.
+    // Rebuilds the bitmap by replaying actions.
     private void rebuildBitmap() {
         if (bitmapCanvas != null) {
-            bitmapCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            // Start with a white canvas.
+            bitmapCanvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
+        }
+        // If the most recent action is a clear marker, we leave the canvas white.
+        if (!paintPaths.isEmpty() && "clear".equals(paintPaths.peek().tool)) {
+            return;
         }
         List<PaintPath> actions = new ArrayList<>(paintPaths);
         Collections.reverse(actions);
         for (PaintPath action : actions) {
             switch (action.tool) {
                 case "clear":
-                    bitmapCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+                    bitmapCanvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
                     break;
                 case "fill":
                     if (action.bitmapSnapshot != null) {
                         bitmapCanvas.drawBitmap(action.bitmapSnapshot, 0, 0, null);
                     } else {
-                        bitmapCanvas.drawColor(action.color);
+                        bitmapCanvas.drawColor(action.color, PorterDuff.Mode.SRC);
                     }
                     break;
                 case "Eraser":
@@ -298,7 +292,7 @@ public class PaintView extends View {
         updateBrush();
     }
 
-    // When setting the tool, update currentTool and update paint settings accordingly.
+    // When setting the tool, update currentTool and configure paint accordingly.
     public void setCurrentTool(String tool) {
         this.currentTool = tool;
         if ("Eraser".equals(tool)) {
@@ -333,6 +327,13 @@ public class PaintView extends View {
         paint.setStrokeWidth(brushSize);
     }
 
+    public void reapplyGlobalSettings(int color, float brushSize, String tool) {
+        setBrushColor(color);
+        setBrushSize(brushSize);
+        setCurrentTool(tool);
+    }
+
+
     // Flood fill implementation remains unchanged.
     private void floodFill(int x, int y, int newColor) {
         int width = bitmap.getWidth();
@@ -343,7 +344,7 @@ public class PaintView extends View {
         if (oldColor == newColor) return;
         Deque<int[]> stack = new ArrayDeque<>();
         stack.push(new int[]{x, y});
-        BitSet visited = new BitSet(width * height);
+        java.util.BitSet visited = new java.util.BitSet(width * height);
         while (!stack.isEmpty()) {
             int[] point = stack.pop();
             int px = point[0], py = point[1];
@@ -372,4 +373,18 @@ public class PaintView extends View {
             invalidate();
         }
     }
+
+    public void resetView() {
+        // Fill the internal bitmap with white.
+        if (bitmapCanvas != null) {
+            bitmapCanvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
+        }
+        // Clear the undo/redo stacks.
+        paintPaths.clear();
+        redoPaths.clear();
+        // Optionally, set currentBitmap to a white image.
+        // (Alternatively, clearBitmap may already have been done via drawColor above.)
+        invalidate();
+    }
+
 }

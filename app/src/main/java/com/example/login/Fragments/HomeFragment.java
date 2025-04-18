@@ -21,6 +21,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.login.Activities.ViewPaintingActivity;
 import com.example.login.Classes.Painting;
+import com.example.login.Dialogs.LoadingManagerDialog;
 import com.example.login.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
@@ -226,7 +227,11 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadPaintings() {
-        FirebaseFirestore.getInstance().collection("paintings")
+
+        LoadingManagerDialog.showLoading(getActivity(), "Loading paintings…");
+
+        FirebaseFirestore.getInstance()
+                .collection("paintings")
                 .orderBy("date", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -236,30 +241,38 @@ public class HomeFragment extends Fragment {
                         String uid = doc.getString("uid");
                         String imageUrl = doc.getString("imageUrl");
                         String name = doc.getString("name");
-                        long creationTime = doc.getTimestamp("date") != null ?
-                                doc.getTimestamp("date").toDate().getTime() : 0;
-                        int likes = doc.getLong("likes") != null ? doc.getLong("likes").intValue() : 0;
+                        long creationTime = doc.getTimestamp("date") != null
+                                ? doc.getTimestamp("date").toDate().getTime()
+                                : 0;
+                        int likes = doc.getLong("likes") != null
+                                ? doc.getLong("likes").intValue()
+                                : 0;
                         String description = doc.getString("description");
                         Boolean isAnonymous = doc.getBoolean("isAnonymous");
                         List<String> likedBy = (List<String>) doc.get("likedBy");
 
-                        // Use an empty string as the initial authorName.
-                        boolean anonymous = (isAnonymous != null) ? isAnonymous : false;
-                        Painting painting = new Painting(imageUrl, docId, uid, name, description, creationTime, likes, anonymous, "");
+                        Painting painting = new Painting(
+                                imageUrl, docId, uid, name, description,
+                                creationTime, likes,
+                                (isAnonymous != null) ? isAnonymous : false,
+                                ""
+                        );
+                        painting.setLikedBy(likedBy);
 
-                        // Fetch and update the author's full name from Firestore.
+                        // Fetch author name asynchronously
                         FirebaseFirestore.getInstance()
                                 .collection("users")
                                 .document(uid)
                                 .get()
-                                .addOnSuccessListener(documentSnapshot -> {
-                                    if (documentSnapshot.exists()) {
-                                        String firstName = documentSnapshot.getString("firstName");
-                                        String lastName = documentSnapshot.getString("lastName");
-                                        String fullName = (firstName != null && lastName != null)
-                                                ?firstName + " " + lastName
-                                                : "Unknown";
-                                        painting.setAuthorName(fullName);
+                                .addOnSuccessListener(userSnap -> {
+                                    if (userSnap.exists()) {
+                                        String first = userSnap.getString("firstName");
+                                        String last  = userSnap.getString("lastName");
+                                        painting.setAuthorName(
+                                                (first != null && last != null)
+                                                        ? first + " " + last
+                                                        : "Unknown"
+                                        );
                                     } else {
                                         painting.setAuthorName("Unknown");
                                     }
@@ -270,14 +283,18 @@ public class HomeFragment extends Fragment {
                                     adapter.notifyDataSetChanged();
                                 });
 
-                        painting.setLikedBy(likedBy);
                         paintingList.add(painting);
                     }
+
                     adapter.notifyDataSetChanged();
+                    LoadingManagerDialog.hideLoading();
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(getContext(), "Failed to load paintings", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Failed to load paintings", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
+                });
     }
+
 
 
     public void loadBgColor(Activity activity, View view) {

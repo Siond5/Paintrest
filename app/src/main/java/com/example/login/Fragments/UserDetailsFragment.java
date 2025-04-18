@@ -27,13 +27,13 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.example.login.Activities.LoginActivity;
 import com.example.login.Activities.MainActivity;
-import com.example.login.Activities.MenuActivity;
+import com.example.login.Dialogs.LoadingManagerDialog;
+import com.example.login.Views.DrawingViewModel;
 import com.example.login.Activities.UiSettingsActivity;
 import com.example.login.Classes.MyUser;
 import com.example.login.R;
@@ -46,9 +46,8 @@ import com.google.firebase.storage.StorageReference;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.yalantis.ucrop.UCrop;
-
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 
 public class UserDetailsFragment extends Fragment implements View.OnClickListener {
     private EditText etDetailsEmail, etDetailsFirstName, etDetailsLastName, etDetailsPhone, etDetailsYOB;
@@ -76,6 +75,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnDeleteAccount = view.findViewById(R.id.btnDeleteAccount);
         btnChangePassword = view.findViewById(R.id.btnChangePassword);
         btnUserUi = view.findViewById(R.id.btnUserUi);
+
 
         loadBgColor(getActivity(), view);
         loadDetails();
@@ -127,7 +127,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     @Override
     public void onResume() {
         super.onResume();
-        // Refresh the UI when returning from the activity
         loadBgColor(getActivity(), getView());
     }
 
@@ -222,12 +221,19 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
 
         else if (view == btnLogout) {
-            Intent intent = new Intent(this.getActivity(), MainActivity.class);
+            // Get the shared DrawingViewModel and reset it
+            DrawingViewModel drawingViewModel = new ViewModelProvider(requireActivity()).get(DrawingViewModel.class);
+            drawingViewModel.setHasLogOut(true);
+            drawingViewModel.reset();
+
+            FirebaseAuth.getInstance().signOut();
+
+            Intent intent = new Intent(getActivity(), MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-            fbAuth.signOut();
             getActivity().finish();
         }
+
 
         else if (view == btnDeleteAccount) {
             new AlertDialog.Builder(getActivity())
@@ -292,6 +298,24 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 .show();
     }
 
+//    private void pickImage() {
+//        String[] options = {"Take a Photo", "Pick from Gallery"};
+//        new AlertDialog.Builder(getContext())
+//                .setTitle("Change Photo")
+//                .setItems(options, (dialog, which) -> {
+//                    if (which == 0) { // Camera
+//                        initializeCameraUri();
+//                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//                        intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
+//                        takePhoto.launch(intent);
+//                    } else if (which == 1) { // Gallery
+//                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+//                        pickImageFromGallery.launch(intent);
+//                    }
+//                })
+//                .show();
+//    }
+
     private void pickImage() {
         String[] options = {"Take a Photo", "Pick from Gallery"};
         new AlertDialog.Builder(getContext())
@@ -299,9 +323,14 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) { // Camera
                         initializeCameraUri();
-                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
-                        takePhoto.launch(intent);
+                        if (profileImageUri != null) {
+                            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                            intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
+                            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            takePhoto.launch(intent);
+                        } else {
+                            Toast.makeText(getActivity(), "Unable to create file for photo.", Toast.LENGTH_SHORT).show();
+                        }
                     } else if (which == 1) { // Gallery
                         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                         pickImageFromGallery.launch(intent);
@@ -310,16 +339,23 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 .show();
     }
 
+
+
     private void initializeCameraUri() {
         try {
             File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
                     "profile_" + System.currentTimeMillis() + ".jpg");
-            profileImageUri = FileProvider.getUriForFile(getActivity(),
-                    getActivity().getApplicationContext().getPackageName() + ".provider", photoFile);
+            profileImageUri = FileProvider.getUriForFile(
+                    getActivity(),
+                    getActivity().getApplicationContext().getPackageName() + ".provider",
+                    photoFile);
         } catch (Exception e) {
             profileImageUri = null;
+            Log.e("InitializeCameraUri", "Error creating image file", e);
         }
     }
+
+
 
     // Modified Crop Image Launcher which now triggers an upload to Firebase Storage.
     private ActivityResultLauncher<Intent> cropImageLauncher = registerForActivityResult(
@@ -343,6 +379,7 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     );
 
     private void uploadProfileImage(Uri imageUri) {
+        LoadingManagerDialog.showLoading(getActivity(), "Uploading image...");
         FirebaseStorage storage = FirebaseStorage.getInstance();
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         String uid = fbAuth.getCurrentUser().getUid();
@@ -351,42 +388,74 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         storageRef.putFile(imageUri)
                 .addOnSuccessListener(taskSnapshot ->
                         storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
-                                    saveProfileImageUrlToSharedPreferences(downloadUri.toString());
+                                    saveProfileImageUriToSharedPreferences(imageUri.toString());
                                     Toast.makeText(getActivity(), "Image uploaded successfully.", Toast.LENGTH_SHORT).show();
+                                    LoadingManagerDialog.hideLoading();
                                 })
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(getActivity(), "Something went wrong, try again later.", Toast.LENGTH_SHORT).show())
-                )
-                .addOnFailureListener(e ->
-                        Toast.makeText(getActivity(), "Image upload failed.", Toast.LENGTH_SHORT).show());
+                                .addOnFailureListener(e ->{
+                                        Toast.makeText(getActivity(), "Something went wrong, try again later.", Toast.LENGTH_SHORT).show();
+                                            LoadingManagerDialog.hideLoading();
+                                        }
+                                            )
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getActivity(), "Image upload failed.", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
+                }));
     }
 
-    private void saveProfileImageUrlToSharedPreferences(String url) {
-        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("profileImageUrl", url);
-        editor.apply();
-    }
+   /**
+     * Copies the cropped image from cache into internal storage (files/profile_images),
+     * then saves a persistent FileProvider URI into SharedPreferences.
+     */
+
+   private void saveProfileImageUriToSharedPreferences(String uri) {
+       try {
+           // Get the source URI
+           Uri sourceUri = Uri.parse(uri);
+
+           // Create a local file in the cache directory
+           File localFile = new File(getActivity().getCacheDir(), "profile_" + System.currentTimeMillis() + ".jpg");
+
+           // Copy the file content
+           Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), sourceUri);
+           FileOutputStream fos = new FileOutputStream(localFile);
+           bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+           fos.close();
+
+           // Get URI from the new file
+           Uri localUri = Uri.fromFile(localFile);
+
+           // Save to SharedPreferences
+           SharedPreferences.Editor editor = sharedPreferences.edit();
+           editor.putString("profileImageUri", localUri.toString());
+           editor.apply();
+
+           // Update the current profileImageUri value
+           profileImageUri = localUri;
+
+       } catch (Exception e) {
+           Toast.makeText(getActivity(), "Failed to save profile image", Toast.LENGTH_SHORT).show();
+       }
+   }
+
 
 
     private final ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        if (profileImageUri != null) {
-                            // Instead of directly using the image, start the crop process
-                            cropImage(profileImageUri);
-                        } else {
-                            Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
-                        }
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    if (profileImageUri != null) {
+                        // Instead of passing the full Bitmap, use the URI to begin cropping
+                        cropImage(profileImageUri);
                     } else {
-                        Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
                     }
+                } else {
+                    Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_LONG).show();
                 }
             }
     );
+;
 
     private final ActivityResultLauncher<Intent> pickImageFromGallery = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -415,18 +484,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         // Launch UCrop activity
         Intent uCropIntent = uCrop.getIntent(getActivity());
         cropImageLauncher.launch(uCropIntent);
-    }
-
-    private byte[] convertImageToByteArray(Uri imageUri) {
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            return outputStream.toByteArray();
-        } catch (Exception e) {
-            Toast.makeText(getActivity(), "Failed to convert image.", Toast.LENGTH_SHORT).show();
-            return null;
-        }
     }
 
     private void loadProfilePicture() {
@@ -460,13 +517,18 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             }
         }
 
+        LoadingManagerDialog.showLoading(getActivity(), "Deleting profile picture...");
+
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         String uid = fbAuth.getCurrentUser().getUid();
         StorageReference storageRef = FirebaseStorage.getInstance().getReference("profile_images/" + uid + ".jpg");
 
         storageRef.delete()
-                .addOnSuccessListener(aVoid -> Log.d("DeletePhoto", "Deleted from Firebase Storage"))
-                .addOnFailureListener(e -> Log.e("DeletePhoto", "Failed to delete from Firebase", e));
+                .addOnSuccessListener(aVoid ->   {Toast.makeText(getActivity(), "Profile photo deleted", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();})
+                .addOnFailureListener(e -> {Toast.makeText(getActivity(), "Failed to delete profile photo", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
+                });
 
         sharedPreferences.edit().remove("profileImageUri").apply();
         ivProfilePicture.setImageResource(R.drawable.default_profile);
@@ -529,4 +591,5 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
             }
         }
     }
+
 }

@@ -27,11 +27,15 @@ import com.example.login.Dialogs.PublishDialogFragment;
 import com.example.login.R;
 import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-
 
 public class PaintFragment extends Fragment {
 
@@ -42,7 +46,9 @@ public class PaintFragment extends Fragment {
     private Button btn_redo;
     private SharedPreferences sharedPreferences;
 
-    public PaintFragment() {}
+    public PaintFragment() {
+        // Required empty constructor.
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -101,6 +107,7 @@ public class PaintFragment extends Fragment {
             updateViewModelStacks();
         });
 
+        // Restore tool settings and canvas state from the ViewModel.
         if (drawingViewModel.getBrushSize().getValue() != null)
             paintView.setBrushSize(drawingViewModel.getBrushSize().getValue());
         if (drawingViewModel.getCurrentTool().getValue() != null)
@@ -116,12 +123,31 @@ public class PaintFragment extends Fragment {
 
         updateUndoRedoButtons();
         restoreCanvas();
+
+        // Observe the clearCanvas event from the ViewModel.
+        drawingViewModel.getClearCanvasEvent().observe(getViewLifecycleOwner(), shouldClear -> {
+            if (shouldClear != null && shouldClear) {
+                paintView.clearCanvasAndRecord();
+                updateUndoRedoButtons();
+                updateViewModelStacks();
+                drawingViewModel.resetClearCanvasEvent();
+            }
+        });
+
         return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        if (drawingViewModel.getHasLogOut())
+        {
+            paintView.clearCanvasAndRecord();
+            drawingViewModel.setHasLogOut(false);
+            paintView.setUndoStack(null);
+            updateUndoRedoButtons();
+            return;
+        }
         if (drawingViewModel.getBrushColor().getValue() != null)
             paintView.setBrushColor(drawingViewModel.getBrushColor().getValue());
         if (drawingViewModel.getBrushSize().getValue() != null)
@@ -162,14 +188,13 @@ public class PaintFragment extends Fragment {
             paintView.setBitmap(savedBitmap);
     }
 
-    // Show a dialog with two options: Publish or Share
+    // Show a dialog with two options: Publish or Share.
     private void showPostOptions() {
         String[] options = {"Publish the paint", "Share the paint"};
         new AlertDialog.Builder(getContext())
                 .setTitle("Post Painting")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
-                        // Open PublishDialogFragment
                         openPublishDialog();
                     } else if (which == 1) {
                         sharePainting();
@@ -178,23 +203,21 @@ public class PaintFragment extends Fragment {
                 .show();
     }
 
-    // Create and show the PublishDialogFragment
+    // Create and show the PublishDialogFragment.
     private void openPublishDialog() {
         PublishDialogFragment publishDialog = PublishDialogFragment.newInstance(paintView.getBitmap());
         publishDialog.show(getChildFragmentManager(), "publishDialog");
     }
 
     private void sharePainting() {
-        // Enable drawing cache and capture the current drawing.
         paintView.setDrawingCacheEnabled(true);
-        Bitmap drawnBitmap = Bitmap.createBitmap(paintView.getDrawingCache());
+        Bitmap bitmap = Bitmap.createBitmap(paintView.getDrawingCache());
         paintView.setDrawingCacheEnabled(false);
-
-        // Create a composite bitmap with a white background for sharing.
-        Bitmap finalBitmap = Bitmap.createBitmap(drawnBitmap.getWidth(), drawnBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        // Create composite bitmap with a white background.
+        Bitmap finalBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas finalCanvas = new Canvas(finalBitmap);
-        finalCanvas.drawColor(Color.WHITE); // Fill with white background.
-        finalCanvas.drawBitmap(drawnBitmap, 0, 0, null);
+        finalCanvas.drawColor(Color.WHITE);
+        finalCanvas.drawBitmap(bitmap, 0, 0, null);
 
         try {
             File cachePath = new File(getContext().getCacheDir(), "images");
@@ -237,6 +260,11 @@ public class PaintFragment extends Fragment {
         );
     }
 
+    public PaintView getPaintView() {
+        return paintView;
+    }
+
+
     public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("bgColor", R.color.Default);
@@ -250,14 +278,9 @@ public class PaintFragment extends Fragment {
 
         for (int i = 0; i < rootView.getChildCount(); i++) {
             View childView = rootView.getChildAt(i);
-
-            // If the view is a button, apply the tint
             if (childView instanceof Button) {
                 ((Button) childView).setBackgroundTintList(buttonColor);
-            }
-
-            // If the view is a ViewGroup, recursively apply the tint to its children
-            else if (childView instanceof ViewGroup) {
+            } else if (childView instanceof ViewGroup) {
                 loadBtnColor((ViewGroup) childView);
             }
         }

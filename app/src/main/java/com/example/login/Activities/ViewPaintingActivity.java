@@ -26,6 +26,7 @@ import androidx.core.content.FileProvider;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.login.Classes.Painting;
+import com.example.login.Dialogs.LoadingManagerDialog;
 import com.example.login.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
@@ -201,7 +202,8 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                         if (painting.getLikedBy() != null) {
                             painting.getLikedBy().add(currentUid);
                         }
-                    } else if (result.equals("unliked")) {
+                    }
+                    else if (result.equals("unliked")) {
                         ivLikeButton.setImageResource(R.drawable.ic_like_off);
                         ivLikeButton.animate()
                                 .scaleX(0.7f).scaleY(0.7f)
@@ -240,6 +242,8 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                         Toast.makeText(this, "Painting cannot be deleted", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    LoadingManagerDialog.showLoading(this, "Deleting painting...");
+
                     // Delete the painting image from Firebase Storage.
                     StorageReference imageRef = FirebaseStorage.getInstance().getReferenceFromUrl(painting.getImageUrl());
                     imageRef.delete().addOnSuccessListener(aVoid -> {
@@ -251,9 +255,12 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                                     Toast.makeText(this, "Painting deleted successfully", Toast.LENGTH_SHORT).show();
                                     setResult(RESULT_OK);
                                     finish();
+                                    LoadingManagerDialog.hideLoading();
                                 })
-                                .addOnFailureListener(e -> Toast.makeText(this, "Failed to delete painting metadata", Toast.LENGTH_SHORT).show());
-                    }).addOnFailureListener(e -> Toast.makeText(this, "Failed to delete painting from storage", Toast.LENGTH_SHORT).show());
+                                .addOnFailureListener ( e -> {Toast.makeText(this, "Failed to delete painting metadata", Toast.LENGTH_SHORT).show();
+                            LoadingManagerDialog.hideLoading();});
+                    }).addOnFailureListener(e -> {Toast.makeText(this, "Failed to delete painting from storage", Toast.LENGTH_SHORT).show();
+                            LoadingManagerDialog.hideLoading();});
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
                 .show();

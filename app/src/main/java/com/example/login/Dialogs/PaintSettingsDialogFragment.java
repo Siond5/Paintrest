@@ -4,10 +4,13 @@ import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -23,6 +26,7 @@ public class PaintSettingsDialogFragment {
         void onSettingsSelected(int color, int brushSize, String tool);
     }
 
+    // Recent colors is now unlimited (you may want to eventually persist a limit if memory is a concern)
     private static final List<Integer> recentColors = new ArrayList<>();
 
     public static void show(Context context, int initialColor, int initialBrushSize, String initialTool, OnPaintSettingsSelectedListener listener) {
@@ -44,19 +48,21 @@ public class PaintSettingsDialogFragment {
         final String[] selectedTool = {initialTool};
         seekBarSize.setProgress(initialBrushSize);
 
+        // Ensure a default (black) is present if not already added.
         if (!recentColors.contains(Color.BLACK)) {
             recentColors.add(0, Color.BLACK);
         }
 
         updateButtonColor(btnColorPicker, selectedColor[0]);
-
         highlightSelectedTool(selectedTool[0], btnBrush, btnEraser, btnLine, btnFill);
 
-        btnColorPicker.setOnClickListener(v -> ColorPickerDialog.show(context, selectedColor[0], color -> {
-            animateColorTransition(btnColorPicker, selectedColor[0], color);
-            selectedColor[0] = color;
-            addRecentColor(color, recentColorsLayout, context, selectedColor, btnColorPicker);
-        }));
+        btnColorPicker.setOnClickListener(v -> {
+            ColorPickerDialog.show(context, selectedColor[0], color -> {
+                animateColorTransition(btnColorPicker, selectedColor[0], color);
+                selectedColor[0] = color;
+                addRecentColor(color, recentColorsLayout, context, selectedColor, btnColorPicker);
+            });
+        });
 
         btnEraser.setOnClickListener(v -> selectTool(btnEraser, selectedTool, "Eraser", btnBrush, btnLine, btnFill));
         btnLine.setOnClickListener(v -> selectTool(btnLine, selectedTool, "Line", btnBrush, btnEraser, btnFill));
@@ -69,6 +75,8 @@ public class PaintSettingsDialogFragment {
         });
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        loadBtnColor((ViewGroup) view, context);
 
         updateRecentColors(recentColorsLayout, context, selectedColor, btnColorPicker);
         dialog.show();
@@ -90,10 +98,8 @@ public class PaintSettingsDialogFragment {
     }
 
     private static void addRecentColor(int color, LinearLayout layout, Context context, int[] selectedColor, Button btnColorPicker) {
+        // Removed limitation: never remove a recent color based on list size.
         if (!recentColors.contains(color)) {
-            if (recentColors.size() >= 5) {
-                recentColors.remove(0);
-            }
             recentColors.add(color);
         }
         updateRecentColors(layout, context, selectedColor, btnColorPicker);
@@ -132,7 +138,6 @@ public class PaintSettingsDialogFragment {
         }
     }
 
-
     private static void highlightSelectedColor(Button selectedButton, LinearLayout layout) {
         for (int i = 0; i < layout.getChildCount(); i++) {
             View child = layout.getChildAt(i);
@@ -154,7 +159,7 @@ public class PaintSettingsDialogFragment {
     private static void animateColorTransition(Button button, int oldColor, int newColor) {
         button.setBackgroundColor(newColor);
         button.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).withEndAction(() ->
-                        button.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150)).start();
+                button.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150)).start();
         ValueAnimator colorAnimator = ValueAnimator.ofObject(new ArgbEvaluator(), oldColor, newColor);
         colorAnimator.setDuration(300);
         colorAnimator.addUpdateListener(animator -> button.setBackgroundColor((int) animator.getAnimatedValue()));
@@ -164,4 +169,27 @@ public class PaintSettingsDialogFragment {
     private static void updateButtonColor(Button button, int color) {
         button.setBackgroundColor(color);
     }
+
+// Inside the PaintSettingsDialogFragment class
+
+    private static void loadBtnColor(ViewGroup rootView, Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+
+        Button btnColorPicker = rootView.findViewById(R.id.btnColorPicker);
+
+        int color = sharedPreferences.getInt("btnColor", R.color.button);
+        ColorStateList buttonColor = ColorStateList.valueOf(color);
+
+        for (int i = 0; i < rootView.getChildCount(); i++) {
+            if (rootView.getChildAt(i)!= btnColorPicker) {
+                View childView = rootView.getChildAt(i);
+                if (childView instanceof Button) {
+                    ((Button) childView).setBackgroundTintList(buttonColor);
+                } else if (childView instanceof ViewGroup) {
+                    loadBtnColor((ViewGroup) childView, context);
+                }
+            }
+        }
+    }
+
 }
