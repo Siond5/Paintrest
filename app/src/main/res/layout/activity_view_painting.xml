@@ -4,7 +4,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="5dp"
+    >
 
     <ImageView
         android:id="@+id/ivPainting"
@@ -19,7 +21,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_marginTop="10dp"
+        android:padding="10dp"
+        android:background="@drawable/loading_background"
+        >
 
         <TextView
             android:id="@+id/tvPaintingName"
