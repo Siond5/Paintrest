@@ -62,7 +62,6 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore:24.7.1") // Firestore
     implementation("com.google.firebase:firebase-storage:20.2.1") // Firebase Storage
 
-
     // Testing dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

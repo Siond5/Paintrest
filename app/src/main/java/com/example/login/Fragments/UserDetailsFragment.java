@@ -39,6 +39,7 @@ import com.example.login.Classes.MyUser;
 import com.example.login.R;
 import com.example.login.Activities.ViewPhotoActivity;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -240,29 +241,67 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                     .setTitle("Delete Account")
                     .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
                     .setPositiveButton("Yes", (dialog, which) -> {
-                        // Proceed with account deletion
+                        LoadingManagerDialog.showLoading(getActivity(), "Deleting account...");
                         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
                         String uid = fbAuth.getUid();
                         FirebaseFirestore store = FirebaseFirestore.getInstance();
-                        try {
-                            store.collection("users").document(uid).delete();
-                            store.collection("colors").document(uid).delete();
-                            fbAuth.getCurrentUser().delete()
-                                    .addOnCompleteListener(task -> {
-                                        if (task.isSuccessful()) {
-                                            Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+                        FirebaseStorage storage = FirebaseStorage.getInstance();
 
-                                            Intent intent = new Intent(getActivity(), MainActivity.class);
-                                            startActivity(intent);
-                                            getActivity().finish();
+                        try {
+                            StorageReference profileRef = storage.getReference().child("profile_images").child(uid + ".jpg");
+                            profileRef.delete().addOnFailureListener(e -> {
+                            });
+
+                            StorageReference paintingsRef = storage.getReference().child("paintings").child(uid);
+                            paintingsRef.listAll()
+                                    .addOnSuccessListener(listResult -> {
+                                        for (StorageReference item : listResult.getItems()) {
+                                            item.delete().addOnFailureListener(e -> {
+                                                Log.e("DeleteAccount", "Failed to delete painting: " + item.getName(), e);
+                                            });
                                         }
+
+                                        store.collection("users").document(uid).delete();
+                                        store.collection("colors").document(uid).delete();
+                                        store.collection("paintings")
+                                                .whereEqualTo("uid", uid)
+                                                .get()
+                                                .addOnSuccessListener(queryDocumentSnapshots -> {
+                                                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                                                        document.getReference().delete();
+                                                    }
+
+                                                    fbAuth.getCurrentUser().delete()
+                                                            .addOnCompleteListener(task -> {
+                                                                LoadingManagerDialog.hideLoading();
+                                                                if (task.isSuccessful()) {
+                                                                    Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+
+                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+                                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                                                    startActivity(intent);
+                                                                    getActivity().finish();
+                                                                } else {
+                                                                    Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+                                                                }
+                                                            });
+                                                })
+                                                .addOnFailureListener(e -> {
+                                                    LoadingManagerDialog.hideLoading();
+                                                    Toast.makeText(getActivity(), "Failed to delete account data. Please try again.", Toast.LENGTH_SHORT).show();
+                                                });
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        LoadingManagerDialog.hideLoading();
+                                        Toast.makeText(getActivity(), "Failed to access storage data. Please try again.", Toast.LENGTH_SHORT).show();
                                     });
+
                         } catch (Exception e) {
+                            LoadingManagerDialog.hideLoading();
                             Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     })
                     .setNegativeButton("Cancel", (dialog, which) -> {
-                        // Do nothing, just dismiss the dialog
                         dialog.dismiss();
                     })
                     .show();

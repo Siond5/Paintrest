@@ -127,7 +127,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                     .setMessage("Enter your email here to receive a password reset link")
                     .setView(dialogView)
 
-                    .setPositiveButton("Yes", (dialog, which) -> {
+                    .setPositiveButton("Confirm", (dialog, which) -> {
                         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
                         fbAuth.sendPasswordResetEmail(inputEmail.getText().toString());
                         Toast.makeText(LoginActivity.this, "Password reset link was sent to your email", Toast.LENGTH_SHORT).show();

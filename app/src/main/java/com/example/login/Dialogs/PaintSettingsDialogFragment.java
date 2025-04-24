@@ -27,7 +27,7 @@ public class PaintSettingsDialogFragment {
     }
 
     // Recent colors is now unlimited (you may want to eventually persist a limit if memory is a concern)
-    private static final List<Integer> recentColors = new ArrayList<>();
+    private static List<Integer> recentColors = new ArrayList<>();
 
     public static void show(Context context, int initialColor, int initialBrushSize, String initialTool, OnPaintSettingsSelectedListener listener) {
         Dialog dialog = new Dialog(context);
@@ -95,6 +95,11 @@ public class PaintSettingsDialogFragment {
         btnEraser.setAlpha(tool.equals("Eraser") ? 1.0f : 0.5f);
         btnLine.setAlpha(tool.equals("Line") ? 1.0f : 0.5f);
         btnFill.setAlpha(tool.equals("Fill") ? 1.0f : 0.5f);
+    }
+
+    public static void clearRecentColors() {
+        recentColors.clear();
+        recentColors.add(Color.BLACK);
     }
 
     private static void addRecentColor(int color, LinearLayout layout, Context context, int[] selectedColor, Button btnColorPicker) {

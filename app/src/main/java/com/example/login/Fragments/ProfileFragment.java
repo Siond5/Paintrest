@@ -36,10 +36,10 @@ import java.util.List;
 
 public class ProfileFragment extends Fragment {
 
-    private static final int REQUEST_CODE_VIEW_PAINTING = 1001; // NEW: Request code for launching ViewPaintingActivity
+    private static final int REQUEST_CODE_VIEW_PAINTING = 1001;
 
     private SharedPreferences sharedPreferences;
-    private TextView numOfPaintings, FullName, Description;
+    private TextView numOfPaintings, FullName;
     private ImageView profileImage;
     private RecyclerView paintingsRecyclerView;
     private TextView emptyPlaceholder;
@@ -67,10 +67,8 @@ public class ProfileFragment extends Fragment {
         paintingsRecyclerView = view.findViewById(R.id.paintingsRecyclerView);
         emptyPlaceholder = view.findViewById(R.id.emptyPlaceholder);
         FullName = view.findViewById(R.id.FullName);
-        Description = view.findViewById(R.id.Description);
         profileImage = view.findViewById(R.id.profileImage);
         scrollView = view.findViewById(R.id.scrollView);
-
         loadUserDetails();
 
         // Setup RecyclerView with a GridLayoutManager (3 columns)
@@ -86,6 +84,12 @@ public class ProfileFragment extends Fragment {
 
         loadUserPaintings();
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadUserPaintings();
     }
 
     private void loadUserDetails() {
@@ -182,6 +186,8 @@ public class ProfileFragment extends Fragment {
                     Toast.makeText(getContext(), "Failed to load paintings", Toast.LENGTH_SHORT).show();
                 });
     }
+
+
 
     public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);

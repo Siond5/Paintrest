@@ -125,8 +125,8 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                                     String firstName = documentSnapshot.getString("firstName");
                                     String lastName = documentSnapshot.getString("lastName");
                                     String fullName = (firstName != null && lastName != null)
-                                            ?"By: " + firstName + " " + lastName : "Unknown";
-                                    tvAuthor.setText(fullName);
+                                            ? firstName + " " + lastName : "Unknown";
+                                    tvAuthor.setText("By: "+fullName);
                                     // Optionally, update the painting's authorName for future use.
                                     painting.setAuthorName(fullName);
                                 } else {
@@ -174,11 +174,12 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
             }
 
             ivLikeButton.setOnClickListener(v -> {
+                LoadingManagerDialog.showLoading(this, "Processing…");
                 DocumentReference docRef = FirebaseFirestore.getInstance()
                         .collection("paintings")
                         .document(painting.getDocId());
-
                 FirebaseFirestore.getInstance().runTransaction(transaction -> {
+
                     DocumentSnapshot snapshot = transaction.get(docRef);
                     List<String> likedBy = (List<String>) snapshot.get("likedBy");
                     if (likedBy != null && likedBy.contains(currentUid)) {
@@ -216,8 +217,12 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                         }
                     }
                     tvPaintingLikes.setText("Likes: " + painting.getLikes());
-                }).addOnFailureListener(e ->
-                        Toast.makeText(ViewPaintingActivity.this, "Failed to update like", Toast.LENGTH_SHORT).show());
+                    LoadingManagerDialog.hideLoading();
+                }).addOnFailureListener(e -> {
+                    Toast.makeText(ViewPaintingActivity.this, "Failed to update like", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
+                });
+
             });
         }
     }
@@ -287,7 +292,7 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
             stream.flush();
             stream.close();
 
-            Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+            Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
 
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
             shareIntent.setType("image/png");
@@ -303,8 +308,9 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
             startActivity(Intent.createChooser(shareIntent, "Share Painting"));
 
         } catch (Exception e) {
-            Log.e("ViewPaintingActivity", "Failed to share painting", e);
-            Toast.makeText(this, "Failed to share painting", Toast.LENGTH_SHORT).show();
+            Log.e("ViewPaintingActivity", "Failed to share painting: " + e.getMessage(), e);
+            Toast.makeText(this, "Failed to share painting: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+
         }
     }
 

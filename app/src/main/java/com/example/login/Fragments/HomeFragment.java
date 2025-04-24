@@ -1,5 +1,6 @@
 package com.example.login.Fragments;
 
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -44,7 +46,7 @@ public class HomeFragment extends Fragment {
     private RecyclerView paintingsRecyclerView;
     private List<Painting> paintingList = new ArrayList<>();
     private PaintingAdapter adapter;
-
+    private static final int REQUEST_CODE_VIEW_PAINTING = 1001;
     public HomeFragment() {
         // Required empty public constructor
     }
@@ -65,6 +67,12 @@ public class HomeFragment extends Fragment {
         loadPaintings();
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadPaintings();
     }
 
     private class PaintingViewHolder extends RecyclerView.ViewHolder {
@@ -88,7 +96,6 @@ public class HomeFragment extends Fragment {
         @NonNull
         @Override
         public PaintingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            // Inflate item_home_painting.xml
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_home_painting, parent, false);
             return new PaintingViewHolder(view);
         }
@@ -127,7 +134,7 @@ public class HomeFragment extends Fragment {
             holder.paintingImage.setOnClickListener(v -> {
                 Intent intent = new Intent(holder.itemView.getContext(), ViewPaintingActivity.class);
                 intent.putExtra("painting", painting);
-                holder.itemView.getContext().startActivity(intent);
+                startActivityForResult(intent, REQUEST_CODE_VIEW_PAINTING);
             });
 
             // Author name and profile image
@@ -174,6 +181,7 @@ public class HomeFragment extends Fragment {
                 holder.likeButton.setImageResource(R.drawable.ic_like_off);
             }
             holder.likeButton.setOnClickListener(v -> {
+                LoadingManagerDialog.showLoading(getActivity(), "Processing…");
                 DocumentReference docRef = FirebaseFirestore.getInstance()
                         .collection("paintings")
                         .document(painting.getDocId());
@@ -214,8 +222,10 @@ public class HomeFragment extends Fragment {
                         }
                     }
                     holder.likeCount.setText(painting.getLikes() + " likes");
+                    LoadingManagerDialog.hideLoading();
                 }).addOnFailureListener(e -> {
                     Toast.makeText(getContext(), "Failed to update like", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
                 });
             });
         }
@@ -223,6 +233,15 @@ public class HomeFragment extends Fragment {
         @Override
         public int getItemCount() {
             return paintingList.size();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == REQUEST_CODE_VIEW_PAINTING && resultCode == Activity.RESULT_OK) {
+            // Refresh the paintings after deletion or any modification.
+            loadPaintings();
         }
     }
 

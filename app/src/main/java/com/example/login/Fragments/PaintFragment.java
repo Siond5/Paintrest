@@ -27,6 +27,7 @@ import com.example.login.Dialogs.PublishDialogFragment;
 import com.example.login.R;
 import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
+import com.example.login.Dialogs.PaintSettingsDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -140,12 +141,9 @@ public class PaintFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (drawingViewModel.getHasLogOut())
-        {
-            paintView.clearCanvasAndRecord();
+        if (drawingViewModel.getHasLogOut()) {
+            resetPainting();
             drawingViewModel.setHasLogOut(false);
-            paintView.setUndoStack(null);
-            updateUndoRedoButtons();
             return;
         }
         if (drawingViewModel.getBrushColor().getValue() != null)
@@ -170,6 +168,23 @@ public class PaintFragment extends Fragment {
     private void updateViewModelStacks() {
         drawingViewModel.setUndoStack(new ArrayList<>(paintView.getUndoStack()));
         drawingViewModel.setRedoStack(new ArrayList<>(paintView.getRedoStack()));
+    }
+
+    private void resetPainting() {
+        paintView.clearCanvasAndRecord();
+
+        PaintSettingsDialogFragment.clearRecentColors();
+
+        paintView.setBrushColor(Color.BLACK);
+        paintView.setBrushSize(10);
+        paintView.setCurrentTool("Brush");
+
+        drawingViewModel.setBrushColor(Color.BLACK);
+        drawingViewModel.setBrushSize(10f);
+        drawingViewModel.setCurrentTool("Brush");
+
+        paintView.setUndoStack(null);
+        updateUndoRedoButtons();
     }
 
     private void updateUndoRedoButtons() {
@@ -205,9 +220,20 @@ public class PaintFragment extends Fragment {
 
     // Create and show the PublishDialogFragment.
     private void openPublishDialog() {
-        PublishDialogFragment publishDialog = PublishDialogFragment.newInstance(paintView.getBitmap());
+        // build a bitmap of what’s on screen
+        paintView.setDrawingCacheEnabled(true);
+        Bitmap bitmap = Bitmap.createBitmap(paintView.getDrawingCache());
+        paintView.setDrawingCacheEnabled(false);
+
+        Bitmap finalBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas finalCanvas = new Canvas(finalBitmap);
+        finalCanvas.drawColor(Color.WHITE);
+        finalCanvas.drawBitmap(bitmap, 0, 0, null);
+
+        PublishDialogFragment publishDialog = PublishDialogFragment.newInstance(finalBitmap);
         publishDialog.show(getChildFragmentManager(), "publishDialog");
     }
+
 
     private void sharePainting() {
         paintView.setDrawingCacheEnabled(true);
@@ -230,7 +256,7 @@ public class PaintFragment extends Fragment {
             stream.flush();
             stream.close();
 
-            Uri contentUri = FileProvider.getUriForFile(getContext(), "com.example.login.fileprovider", file);
+            Uri contentUri = FileProvider.getUriForFile(getContext(), "com.example.login.provider", file);
 
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
             shareIntent.setType("image/png");

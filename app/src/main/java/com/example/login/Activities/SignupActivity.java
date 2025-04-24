@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.login.Classes.Colors;
 import com.example.login.Classes.MyUser;
+import com.example.login.Dialogs.LoadingManagerDialog;
 import com.example.login.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -157,6 +158,7 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
 
             // If all fields are valid, proceed with Firebase signup
             if (isEmailValid && isPasswordValid && isFirstNameValid && isLastNameValid && isPhoneValid && isYOBValid) {
+                LoadingManagerDialog.showLoading(this, "Creating account...");
                 // Create user in Firebase Authentication
                 fbAuth.createUserWithEmailAndPassword(email, pass)
                         .addOnCompleteListener(task -> {
@@ -169,15 +171,17 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
                                         .addOnSuccessListener(aVoid -> {
                                             store.collection("colors").document(fbAuth.getCurrentUser().getUid()).set(new Colors(SignupActivity.this));
                                             Toast.makeText(SignupActivity.this, "User added successfully!", Toast.LENGTH_SHORT).show();
+                                            LoadingManagerDialog.hideLoading();
                                             startActivity(new Intent(SignupActivity.this, MainActivity.class));
                                         })
                                         .addOnFailureListener(e -> Toast.makeText(SignupActivity.this, "Failed to save User information. Please try again.", Toast.LENGTH_SHORT).show());
                             } else {
                                 Toast.makeText(SignupActivity.this, "Failed to create account. Please check your Email and Password.", Toast.LENGTH_SHORT).show();
+                                LoadingManagerDialog.hideLoading();
                             }
                         });
             } else {
-
+                LoadingManagerDialog.hideLoading();
                 Toast.makeText(SignupActivity.this, "Please fix the errors above before submitting.", Toast.LENGTH_SHORT).show();
             }
         }

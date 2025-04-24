@@ -115,6 +115,7 @@ public class PublishDialogFragment extends DialogFragment {
 
         if (paintingName.isEmpty()){
             Toast.makeText(getContext(), "Please enter the painting's name.", Toast.LENGTH_SHORT).show();
+            LoadingManagerDialog.hideLoading();
             return;
         }
 
