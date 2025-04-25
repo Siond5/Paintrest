@@ -6,7 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -135,6 +137,41 @@ public class HomeFragment extends Fragment {
                 Intent intent = new Intent(holder.itemView.getContext(), ViewPaintingActivity.class);
                 intent.putExtra("painting", painting);
                 startActivityForResult(intent, REQUEST_CODE_VIEW_PAINTING);
+            });
+
+            // 2) Create your GestureDetector *with* onDown() returning true:
+            GestureDetector gestureDetector = new GestureDetector(
+                    holder.itemView.getContext(),
+                    new GestureDetector.SimpleOnGestureListener() {
+                        @Override
+                        public boolean onDown(MotionEvent e) {
+                            // Must return true to get subsequent events
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onSingleTapConfirmed(MotionEvent e) {
+                            // Single‐tap: open the detail page
+                            Intent intent = new Intent(holder.itemView.getContext(), ViewPaintingActivity.class);
+                            intent.putExtra("painting", painting);
+                            startActivityForResult(intent, REQUEST_CODE_VIEW_PAINTING);
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onDoubleTap(MotionEvent e) {
+                            // Double‐tap: “click” the like button
+                            holder.likeButton.performClick();
+                            return true;
+                        }
+                    }
+            );
+
+            // Wire the detector into the ImageView’s touch events:
+            holder.paintingImage.setOnTouchListener((v, event) -> {
+                // Let gestureDetector handle it (always return true so we intercept taps)
+                gestureDetector.onTouchEvent(event);
+                return true;
             });
 
             // Author name and profile image

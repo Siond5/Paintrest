@@ -13,6 +13,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -89,6 +91,38 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         // Setup the like button.
         setupLikeButton();
         loadBgColor();
+
+        // make sure the ImageView is clickable
+        ivPainting.setClickable(true);
+
+        // 1) create the GestureDetector
+        GestureDetector gestureDetector = new GestureDetector(
+                this,
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onDown(MotionEvent e) {
+                        // must return true to get further events
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onDoubleTap(MotionEvent e) {
+                        // forward to your like-button logic
+                        ivLikeButton.performClick();
+                        return true;
+                    }
+
+                    // Optional: if you want to react to single–tap in this view,
+                    // you could override onSingleTapConfirmed(...)
+                }
+        );
+
+        // 2) wire it into the ImageView’s touch events
+        ivPainting.setOnTouchListener((v, event) -> {
+            gestureDetector.onTouchEvent(event);
+            // consume all touches here so they don’t “leak” elsewhere
+            return true;
+        });
     }
 
     private void loadPaintingDetails() {
