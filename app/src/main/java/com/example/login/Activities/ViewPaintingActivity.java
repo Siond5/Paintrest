@@ -1,5 +1,6 @@
 package com.example.login.Activities;
 
+import static android.text.TextUtils.TruncateAt.END;
 import static android.view.View.GONE;
 
 import android.app.Activity;
@@ -19,10 +20,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.Guideline;
 import androidx.core.content.FileProvider;
 
 import com.bumptech.glide.Glide;
@@ -48,9 +51,11 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
     private ImageView ivPainting;
     private ImageView ivLikeButton;
     private Button btnBack, btnDelete, btnShare;
-    private TextView tvPaintingName, tvPaintingDate, tvPaintingDescription, tvPaintingLikes, tvAuthor;
+    private TextView tvPaintingName, tvPaintingDate, tvPaintingDescription, tvPaintingLikes, tvAuthor, tvPaintingNameMore, tvPaintingDescriptionMore;;
     private Painting painting; // Passed via Intent (Serializable)
     private View view;
+    private ScrollView bottomPane;
+    private Guideline guideline;
     SharedPreferences sp;
 
     @Override
@@ -70,11 +75,20 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         btnBack = findViewById(R.id.btn_back);
         btnDelete = findViewById(R.id.btn_delete);
         btnShare = findViewById(R.id.btn_share);
+        tvPaintingNameMore = findViewById(R.id.tvPaintingNameMore);
+        tvPaintingDescriptionMore = findViewById(R.id.tvPaintingDescriptionMore);
+        bottomPane = findViewById(R.id.bottomPane);
+        guideline = findViewById(R.id.guideline);
+
         btnBack.setOnClickListener(this);
         btnDelete.setOnClickListener(this);
         btnShare.setOnClickListener(this);
 
+
         sp = this.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+
+        setupExpandableText(tvPaintingName, tvPaintingNameMore);
+        setupExpandableText(tvPaintingDescription, tvPaintingDescriptionMore);
 
         loadPaintingDetails();
 
@@ -91,6 +105,9 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         // Setup the like button.
         setupLikeButton();
         loadBgColor();
+        adjustGuideline();
+
+
 
         // make sure the ImageView is clickable
         ivPainting.setClickable(true);
@@ -124,6 +141,104 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
             return true;
         });
     }
+
+    private void adjustGuideline() {
+        bottomPane.post(() -> {
+            View content = bottomPane.getChildAt(0);
+
+            int wSpec = View.MeasureSpec.makeMeasureSpec(bottomPane.getWidth(), View.MeasureSpec.AT_MOST);
+            int hSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            content.measure(wSpec, hSpec);
+            int contentH = content.getMeasuredHeight();
+
+            int totalH = view.getHeight();
+            float maxBot = totalH * 0.35f;
+
+            if (contentH <= maxBot) {
+                // Content small, move guideline up (so bottomPane wraps nicely)
+                float topPct = 1f - ((float) contentH / totalH);
+                topPct = Math.max(0.65f, Math.min(topPct, 1f));
+                guideline.setGuidelinePercent(topPct);
+            } else {
+                guideline.setGuidelinePercent(0.65f);
+            }
+        });
+    }
+
+    private void setupExpandableText(TextView contentTextView, TextView toggleTextView) {
+        contentTextView.setMaxLines(2);
+
+        contentTextView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (contentTextView.getLayout() != null) {
+                boolean isEllipsized = contentTextView.getLayout().getEllipsisCount(1) > 0;
+
+                // Or check if there would be more lines than max
+                int lineCount = contentTextView.getLineCount();
+
+                if (isEllipsized || lineCount > 2) {
+                    toggleTextView.setVisibility(View.VISIBLE);
+                    toggleTextView.setText("Show more");
+
+                    toggleTextView.setOnClickListener(v -> {
+                        if (contentTextView.getMaxLines() == 2) {
+                            contentTextView.setMaxLines(Integer.MAX_VALUE);
+                            toggleTextView.setText("Show less");
+                        } else {
+                            contentTextView.setMaxLines(2);
+                            toggleTextView.setText("Show more");
+                        }
+                        // Make sure to adjust layout after changing max lines
+                        adjustGuideline();
+                    });
+                } else {
+                    toggleTextView.setVisibility(View.GONE);
+                }
+
+                // Adjust guideline after determining toggle visibility
+                adjustGuideline();
+            }
+        });
+    }
+
+//    private void setupExpandableText(TextView contentTextView, TextView toggleTextView) {
+//        contentTextView.post(() -> {
+//            final int maxLines = 2;
+//
+//            // Save the current maxLines
+//            int originalMaxLines = contentTextView.getMaxLines();
+//
+//            // Temporarily remove constraints to measure total possible lines
+//            contentTextView.setMaxLines(Integer.MAX_VALUE);
+//
+//            // Force layout to get accurate measurements
+//            contentTextView.measure(
+//                    View.MeasureSpec.makeMeasureSpec(contentTextView.getWidth(), View.MeasureSpec.EXACTLY),
+//                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+//            );
+//
+//            // Get the actual line count when unconstrained
+//            int totalLines = contentTextView.getLineCount();
+//
+//            // Reset to original setting
+//            contentTextView.setMaxLines(originalMaxLines);
+//
+//            // Only show toggle if there are strictly more than maxLines
+//            if (totalLines > maxLines) {
+//                toggleTextView.setVisibility(View.VISIBLE);
+//                toggleTextView.setText("Show more");
+//                toggleTextView.setOnClickListener(v -> {
+//                    boolean expand = contentTextView.getMaxLines() == maxLines;
+//                    contentTextView.setMaxLines(expand ? Integer.MAX_VALUE : maxLines);
+//                    toggleTextView.setText(expand ? "Show less" : "Show more");
+//                });
+//            } else {
+//                toggleTextView.setVisibility(View.GONE);
+//            }
+//
+//            adjustGuideline();
+//        });
+//    }
+
 
     private void loadPaintingDetails() {
         painting = (Painting) getIntent().getSerializableExtra("painting");

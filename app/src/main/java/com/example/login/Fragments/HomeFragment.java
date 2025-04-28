@@ -1,6 +1,8 @@
 package com.example.login.Fragments;
 
 
+import static android.text.TextUtils.TruncateAt.END;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -78,13 +80,14 @@ public class HomeFragment extends Fragment {
     }
 
     private class PaintingViewHolder extends RecyclerView.ViewHolder {
-        TextView paintingName, description, userName, creationDate, likeCount;
+        TextView paintingName, description, userName, creationDate, likeCount, paintingNameMore, descriptionMore;
         ImageView paintingImage, userPhoto, likeButton;
-
         public PaintingViewHolder(@NonNull View itemView) {
             super(itemView);
             paintingName = itemView.findViewById(R.id.paintingName);
+            paintingNameMore = itemView.findViewById(R.id.paintingNameMore); // Add this
             description = itemView.findViewById(R.id.description);
+            descriptionMore = itemView.findViewById(R.id.descriptionMore); // Add this
             userName = itemView.findViewById(R.id.userName);
             creationDate = itemView.findViewById(R.id.creationDate);
             likeCount = itemView.findViewById(R.id.likeCount);
@@ -108,11 +111,19 @@ public class HomeFragment extends Fragment {
 
             // Painting info
             holder.paintingName.setText(painting.getName());
+
+            // Setup expandable text for painting name
+            setupExpandableText(holder.paintingName, holder.paintingNameMore);
+
             if (painting.getDescription() != null && !painting.getDescription().isEmpty()) {
                 holder.description.setText(painting.getDescription());
                 holder.description.setVisibility(View.VISIBLE);
+
+                // Setup expandable text for description
+                setupExpandableText(holder.description, holder.descriptionMore);
             } else {
                 holder.description.setVisibility(View.GONE);
+                holder.descriptionMore.setVisibility(View.GONE);
             }
             Date date = new Date(painting.getCreationTime());
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -280,6 +291,37 @@ public class HomeFragment extends Fragment {
             // Refresh the paintings after deletion or any modification.
             loadPaintings();
         }
+    }
+
+    private void setupExpandableText(TextView contentTextView, TextView toggleTextView) {
+        contentTextView.setMaxLines(2);
+
+        contentTextView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (contentTextView.getLayout() != null) {
+                boolean isEllipsized = contentTextView.getLayout().getEllipsisCount(1) > 0;
+
+                int lineCount = contentTextView.getLineCount();
+
+                if (isEllipsized || lineCount > 2) {
+                    toggleTextView.setVisibility(View.VISIBLE);
+                    toggleTextView.setText("Show more");
+
+                    toggleTextView.setOnClickListener(v -> {
+                        if (contentTextView.getMaxLines() == 2) {
+                            contentTextView.setMaxLines(Integer.MAX_VALUE);
+                            toggleTextView.setText("Show less");
+                        } else {
+                            contentTextView.setMaxLines(2);
+                            toggleTextView.setText("Show more");
+                        }
+
+                    });
+                } else {
+                    toggleTextView.setVisibility(View.GONE);
+                }
+
+            }
+        });
     }
 
     private void loadPaintings() {

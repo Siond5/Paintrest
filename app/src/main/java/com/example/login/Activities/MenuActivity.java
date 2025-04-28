@@ -42,7 +42,6 @@ import java.util.Calendar;
 
 public class MenuActivity extends AppCompatActivity {
     BottomNavigationView bottomNavigationView;
-    SharedPreferences sp;
     private MyUser user;
     private Colors color;
     private int bgColor, btnColor;
