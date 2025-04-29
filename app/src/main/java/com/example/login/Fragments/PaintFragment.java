@@ -1,5 +1,7 @@
 package com.example.login.Fragments;
 
+import static android.text.TextUtils.TruncateAt.END;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -27,30 +29,65 @@ import com.example.login.Dialogs.PublishDialogFragment;
 import com.example.login.R;
 import com.example.login.Views.DrawingViewModel;
 import com.example.login.Views.PaintView;
-import com.example.login.Dialogs.PaintSettingsDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 
+/**
+ * Fragment that provides a drawing canvas and controls for painting.
+ * <p>
+ * Hosts a PaintView, manages brush/eraser tools, undo/redo stacks,
+ * and supports publishing or sharing the resulting image.
+ * State is persisted via a DrawingViewModel.
+ * </p>
+ */
 public class PaintFragment extends Fragment {
 
+    /** The custom view where users draw. */
     private PaintView paintView;
+
+    /** Cached bitmap of the last saved canvas. */
     private static Bitmap savedBitmap;
+
+    /** ViewModel storing brush settings and undo/redo stacks. */
     private DrawingViewModel drawingViewModel;
+
+    /** Button for undoing the last action. */
     private Button btn_undo;
+
+    /** Button for redoing the last undone action. */
     private Button btn_redo;
+
+    /** SharedPreferences for persisting UI colors and user settings. */
     private SharedPreferences sharedPreferences;
 
+    /**
+     * Required empty public constructor.
+     */
     public PaintFragment() {
         // Required empty constructor.
     }
 
+    /**
+     * Inflates the fragment's UI, sets up the PaintView and control buttons,
+     * and restores any saved state from the ViewModel.
+     *
+     * @param inflater           LayoutInflater to inflate the layout.
+     * @param container          Parent view to attach the fragment's UI.
+     * @param savedInstanceState Bundle containing saved state, if any.
+     * @return The root View of the fragment.
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_paint, container, false);
@@ -138,6 +175,9 @@ public class PaintFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Ensures brush and tool settings persist when fragment resumes.
+     */
     @Override
     public void onResume() {
         super.onResume();
@@ -154,6 +194,9 @@ public class PaintFragment extends Fragment {
             paintView.setCurrentTool(drawingViewModel.getCurrentTool().getValue());
     }
 
+    /**
+     * Saves canvas and tool state when fragment is paused.
+     */
     @Override
     public void onPause() {
         super.onPause();
@@ -165,11 +208,17 @@ public class PaintFragment extends Fragment {
         updateViewModelStacks();
     }
 
+    /**
+     * Updates the ViewModel's undo/redo stacks.
+     */
     private void updateViewModelStacks() {
         drawingViewModel.setUndoStack(new ArrayList<>(paintView.getUndoStack()));
         drawingViewModel.setRedoStack(new ArrayList<>(paintView.getRedoStack()));
     }
 
+    /**
+     * Resets the painting to initial state (clear, default tool and color).
+     */
     private void resetPainting() {
         paintView.clearCanvasAndRecord();
 
@@ -187,23 +236,34 @@ public class PaintFragment extends Fragment {
         updateUndoRedoButtons();
     }
 
+    /**
+     * Enables or disables the undo/redo buttons based on availability.
+     */
     private void updateUndoRedoButtons() {
         btn_undo.setEnabled(paintView.canUndo());
         btn_redo.setEnabled(paintView.canRedo());
     }
 
+    /**
+     * Saves the current canvas into a static bitmap for restoration.
+     */
     private void saveCanvas() {
         savedBitmap = Bitmap.createBitmap(paintView.getWidth(), paintView.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(savedBitmap);
         paintView.draw(canvas);
     }
 
+    /**
+     * Restores the saved bitmap onto the PaintView.
+     */
     private void restoreCanvas() {
         if (savedBitmap != null)
             paintView.setBitmap(savedBitmap);
     }
 
-    // Show a dialog with two options: Publish or Share.
+    /**
+     * Shows a dialog offering to publish or share the painting.
+     */
     private void showPostOptions() {
         String[] options = {"Publish the paint", "Share the paint"};
         new AlertDialog.Builder(getContext())
@@ -218,9 +278,10 @@ public class PaintFragment extends Fragment {
                 .show();
     }
 
-    // Create and show the PublishDialogFragment.
+    /**
+     * Opens the publish dialog with a white-backed bitmap of the canvas.
+     */
     private void openPublishDialog() {
-        // build a bitmap of what’s on screen
         paintView.setDrawingCacheEnabled(true);
         Bitmap bitmap = Bitmap.createBitmap(paintView.getDrawingCache());
         paintView.setDrawingCacheEnabled(false);
@@ -234,12 +295,13 @@ public class PaintFragment extends Fragment {
         publishDialog.show(getChildFragmentManager(), "publishDialog");
     }
 
-
+    /**
+     * Shares the painting via external apps using a FileProvider.
+     */
     private void sharePainting() {
         paintView.setDrawingCacheEnabled(true);
         Bitmap bitmap = Bitmap.createBitmap(paintView.getDrawingCache());
         paintView.setDrawingCacheEnabled(false);
-        // Create composite bitmap with a white background.
         Bitmap finalBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas finalCanvas = new Canvas(finalBitmap);
         finalCanvas.drawColor(Color.WHITE);
@@ -269,6 +331,9 @@ public class PaintFragment extends Fragment {
         }
     }
 
+    /**
+     * Opens the paint settings dialog to adjust brush color, size, and tool.
+     */
     private void openSettings() {
         PaintSettingsDialogFragment.show(
                 getContext(),
@@ -286,11 +351,21 @@ public class PaintFragment extends Fragment {
         );
     }
 
+    /**
+     * Returns the PaintView instance contained in this fragment.
+     *
+     * @return the PaintView for direct access.
+     */
     public PaintView getPaintView() {
         return paintView;
     }
 
-
+    /**
+     * Loads background color and button tint from SharedPreferences.
+     *
+     * @param activity Activity context for SharedPreferences.
+     * @param view     Root view to apply background color.
+     */
     public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("bgColor", R.color.Default);
@@ -298,6 +373,11 @@ public class PaintFragment extends Fragment {
         loadBtnColor((ViewGroup) view);
     }
 
+    /**
+     * Recursively applies the stored button color to all Button views.
+     *
+     * @param rootView ViewGroup whose child buttons will be tinted.
+     */
     private void loadBtnColor(ViewGroup rootView) {
         int color = sharedPreferences.getInt("btnColor", R.color.button);
         ColorStateList buttonColor = ColorStateList.valueOf(color);

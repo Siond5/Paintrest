@@ -20,6 +20,11 @@ import android.widget.SeekBar;
 
 import com.example.login.R;
 
+/**
+ * A customizable Color Picker Dialog for Android apps.
+ * Allows the user to select a color by adjusting hue, saturation, and brightness.
+ * Includes a preview box and dynamic button coloring based on SharedPreferences settings.
+ */
 public class ColorPickerDialog {
 
     public interface OnColorSelectedListener {
@@ -82,7 +87,6 @@ public class ColorPickerDialog {
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         loadBtnColor((ViewGroup) dialogView, context);
-
 
         dialog.show();
     }

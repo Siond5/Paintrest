@@ -1,3 +1,11 @@
+/**
+ * Activity for user sign-up.
+ * <p>
+ * Handles user input for email, password, first and last name, phone number,
+ * and year of birth. Validates input fields dynamically and creates a new
+ * user account in Firebase Authentication and Firestore upon successful
+ * validation.
+ */
 package com.example.login.Activities;
 
 import android.content.Intent;
@@ -33,39 +41,44 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class SignupActivity extends AppCompatActivity implements View.OnClickListener {
 
-    // Declare Views
+    // Views for user input
     private EditText etSignupEmail, etSignupPassword, etSignupFname, etSignupLname, etSignupPhone, etSignupYOB;
     private Button btnSignup, goSignin;
     private FirebaseAuth fbAuth;
     private ImageButton btnTogglePassword;
     private boolean isPasswordVisible = false;
 
+    /**
+     * Called when the activity is first created.
+     * Sets up edge-to-edge layout, initializes views, listeners, and Firebase Auth.
+     *
+     * @param savedInstanceState saved state bundle
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_signup);
 
-        // Apply window insets
+        // Apply window insets for proper layout
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        // Initialize views
         findViews();
-
-        // Set listeners for the buttons
         btnSignup.setOnClickListener(this);
         goSignin.setOnClickListener(this);
         btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility());
 
         fbAuth = FirebaseAuth.getInstance();
-
         setUpTextWatchers();
     }
 
+    /**
+     * Finds and initializes view references from layout.
+     */
     private void findViews() {
         etSignupEmail = findViewById(R.id.etSignupEmail);
         etSignupPassword = findViewById(R.id.etSignupPassword);
@@ -78,6 +91,10 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
     }
 
+    /**
+     * Toggles visibility of the password field.
+     * Updates input type and icon accordingly.
+     */
     private void togglePasswordVisibility() {
         if (isPasswordVisible) {
             etSignupPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -92,7 +109,9 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         isPasswordVisible = !isPasswordVisible;
     }
 
-    // Set up text watchers for dynamic validation
+    /**
+     * Attaches text watchers to input fields for real-time validation.
+     */
     private void setUpTextWatchers() {
         etSignupEmail.addTextChangedListener(createValidationWatcher(etSignupEmail, "email"));
         etSignupPassword.addTextChangedListener(createValidationWatcher(etSignupPassword, "password"));
@@ -102,6 +121,13 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         etSignupYOB.addTextChangedListener(createValidationWatcher(etSignupYOB, "yearOfBirth"));
     }
 
+    /**
+     * Creates a TextWatcher for validating specific field types.
+     *
+     * @param editText the EditText to watch
+     * @param type     validation type: "email", "password", "name", "phone", or "yearOfBirth"
+     * @return configured TextWatcher
+     */
     private TextWatcher createValidationWatcher(final EditText editText, final String type) {
         return new TextWatcher() {
             @Override
@@ -133,11 +159,15 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         };
     }
 
+    /**
+     * Handles button click events for sign-up and navigating to sign-in.
+     *
+     * @param view the clicked View
+     */
     @Override
     public void onClick(View view) {
         if (view == goSignin) {
-            Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(SignupActivity.this, LoginActivity.class));
         }
 
         if (view == btnSignup) {
@@ -148,7 +178,6 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
             String phone = etSignupPhone.getText().toString();
             String yobStr = etSignupYOB.getText().toString();
 
-            //valid fields by boolean veriables
             boolean isEmailValid = validateEmail(email);
             boolean isPasswordValid = validatePassword(pass);
             boolean isFirstNameValid = validateName(firstname, "first name");
@@ -156,10 +185,8 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
             boolean isPhoneValid = validatePhone(phone);
             boolean isYOBValid = validateYearOfBirth(yobStr);
 
-            // If all fields are valid, proceed with Firebase signup
             if (isEmailValid && isPasswordValid && isFirstNameValid && isLastNameValid && isPhoneValid && isYOBValid) {
                 LoadingManagerDialog.showLoading(this, "Creating account...");
-                // Create user in Firebase Authentication
                 fbAuth.createUserWithEmailAndPassword(email, pass)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
@@ -167,16 +194,19 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
                                 MyUser user = new MyUser(firstname, lastname, phone, yob);
                                 FirebaseFirestore store = FirebaseFirestore.getInstance();
                                 store.collection("users")
-                                        .document(fbAuth.getCurrentUser().getUid()).set(user)
+                                        .document(fbAuth.getCurrentUser().getUid())
+                                        .set(user)
                                         .addOnSuccessListener(aVoid -> {
-                                            store.collection("colors").document(fbAuth.getCurrentUser().getUid()).set(new Colors(SignupActivity.this));
+                                            store.collection("colors")
+                                                    .document(fbAuth.getCurrentUser().getUid())
+                                                    .set(new Colors(SignupActivity.this));
                                             Toast.makeText(SignupActivity.this, "User added successfully!", Toast.LENGTH_SHORT).show();
                                             LoadingManagerDialog.hideLoading();
                                             startActivity(new Intent(SignupActivity.this, MainActivity.class));
                                         })
-                                        .addOnFailureListener(e -> Toast.makeText(SignupActivity.this, "Failed to save User information. Please try again.", Toast.LENGTH_SHORT).show());
+                                        .addOnFailureListener(e -> Toast.makeText(SignupActivity.this, "Failed to save user information. Please try again.", Toast.LENGTH_SHORT).show());
                             } else {
-                                Toast.makeText(SignupActivity.this, "Failed to create account. Please check your Email and Password.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(SignupActivity.this, "Failed to create account. Please check your email and password.", Toast.LENGTH_SHORT).show();
                                 LoadingManagerDialog.hideLoading();
                             }
                         });
@@ -187,7 +217,12 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    // Email validation
+    /**
+     * Validates email format and emptiness.
+     *
+     * @param email the email string to validate
+     * @return true if valid, false otherwise
+     */
     private boolean validateEmail(String email) {
         if (email.isEmpty()) {
             etSignupEmail.setError("Please enter your email.");
@@ -198,7 +233,12 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    // Password validation
+    /**
+     * Validates password length and emptiness.
+     *
+     * @param password the password string to validate
+     * @return true if at least 6 characters, false otherwise
+     */
     private boolean validatePassword(String password) {
         if (password.isEmpty()) {
             etSignupPassword.setError("Please enter your password.");
@@ -212,7 +252,13 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    // Name validation (first name or last name)
+    /**
+     * Validates that a name field is not empty.
+     *
+     * @param name      the name string to validate
+     * @param fieldName descriptor for error messaging ("first name" or "last name")
+     * @return true if not empty, false otherwise
+     */
     private boolean validateName(String name, String fieldName) {
         if (name.isEmpty()) {
             if (fieldName.equals("first name")) {
@@ -231,7 +277,12 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    // Phone validation
+    /**
+     * Validates phone number format (digits only, length 9-10).
+     *
+     * @param phone the phone number string to validate
+     * @return true if valid, false otherwise
+     */
     private boolean validatePhone(String phone) {
         if (phone.isEmpty()) {
             etSignupPhone.setError("Please enter your phone number.");
@@ -245,7 +296,12 @@ public class SignupActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    // Year of birth validation
+    /**
+     * Validates year of birth format (exactly 4 digits, numeric).
+     *
+     * @param yobStr the year of birth string to validate
+     * @return true if a valid 4-digit number, false otherwise
+     */
     private boolean validateYearOfBirth(String yobStr) {
         if (yobStr.isEmpty()) {
             etSignupYOB.setError("Please enter your year of birth.");

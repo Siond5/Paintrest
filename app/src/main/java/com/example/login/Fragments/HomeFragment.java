@@ -1,6 +1,5 @@
 package com.example.login.Fragments;
 
-
 import static android.text.TextUtils.TruncateAt.END;
 
 import android.app.Activity;
@@ -41,24 +40,52 @@ import com.google.firebase.storage.StorageReference;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Fragment displaying a scrollable list of paintings from Firestore.
+ * <p>
+ * Supports viewing details, liking/unliking, expandable text fields,
+ * and handles anonymous posts and profile image loading.
+ * </p>
+ */
 public class HomeFragment extends Fragment {
+
+    /** SharedPreferences for storing user-specific settings like background color. */
     private SharedPreferences sharedPreferences;
+
+    /** RecyclerView displaying painting items. */
     private RecyclerView paintingsRecyclerView;
+
+    /** List backing the RecyclerView adapter. */
     private List<Painting> paintingList = new ArrayList<>();
+
+    /** Adapter for painting items. */
     private PaintingAdapter adapter;
+
+    /** Request code for launching ViewPaintingActivity. */
     private static final int REQUEST_CODE_VIEW_PAINTING = 1001;
+
+    /**
+     * Required empty public constructor.
+     */
     public HomeFragment() {
-        // Required empty public constructor
     }
 
+    /**
+     * Inflates the fragment layout, initializes RecyclerView and loads paintings.
+     *
+     * @param inflater           LayoutInflater to inflate views.
+     * @param container          Parent view that the fragment UI should attach to.
+     * @param savedInstanceState Saved state bundle.
+     * @return Root view of the fragment.
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate your fragment_home layout which must contain a RecyclerView with id "paintingsRecyclerView"
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         loadBgColor(getActivity(), view);
 
@@ -73,21 +100,33 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Reloads paintings when fragment resumes.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadPaintings();
     }
 
+    /**
+     * ViewHolder for painting items, caching subviews.
+     */
     private class PaintingViewHolder extends RecyclerView.ViewHolder {
         TextView paintingName, description, userName, creationDate, likeCount, paintingNameMore, descriptionMore;
         ImageView paintingImage, userPhoto, likeButton;
+
+        /**
+         * Constructs a ViewHolder and finds child views.
+         *
+         * @param itemView The inflated item view.
+         */
         public PaintingViewHolder(@NonNull View itemView) {
             super(itemView);
             paintingName = itemView.findViewById(R.id.paintingName);
-            paintingNameMore = itemView.findViewById(R.id.paintingNameMore); // Add this
+            paintingNameMore = itemView.findViewById(R.id.paintingNameMore);
             description = itemView.findViewById(R.id.description);
-            descriptionMore = itemView.findViewById(R.id.descriptionMore); // Add this
+            descriptionMore = itemView.findViewById(R.id.descriptionMore);
             userName = itemView.findViewById(R.id.userName);
             creationDate = itemView.findViewById(R.id.creationDate);
             likeCount = itemView.findViewById(R.id.likeCount);
@@ -97,11 +136,16 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    /**
+     * RecyclerView Adapter for painting list.
+     */
     private class PaintingAdapter extends RecyclerView.Adapter<PaintingViewHolder> {
+
         @NonNull
         @Override
         public PaintingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_home_painting, parent, false);
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_home_painting, parent, false);
             return new PaintingViewHolder(view);
         }
 
@@ -109,28 +153,29 @@ public class HomeFragment extends Fragment {
         public void onBindViewHolder(@NonNull final PaintingViewHolder holder, int position) {
             final Painting painting = paintingList.get(position);
 
-            // Painting info
+            // Set painting name and expandable toggle
             holder.paintingName.setText(painting.getName());
-
-            // Setup expandable text for painting name
             setupExpandableText(holder.paintingName, holder.paintingNameMore);
 
+            // Description handling
             if (painting.getDescription() != null && !painting.getDescription().isEmpty()) {
                 holder.description.setText(painting.getDescription());
                 holder.description.setVisibility(View.VISIBLE);
-
-                // Setup expandable text for description
                 setupExpandableText(holder.description, holder.descriptionMore);
             } else {
                 holder.description.setVisibility(View.GONE);
                 holder.descriptionMore.setVisibility(View.GONE);
             }
+
+            // Date display
             Date date = new Date(painting.getCreationTime());
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             holder.creationDate.setText("Date of creation: " + sdf.format(date));
+
+            // Like count
             holder.likeCount.setText(painting.getLikes() + " likes");
 
-            // Load painting image
+            // Load painting image with placeholder/error
             String imageUrl = painting.getImageUrl();
             if (imageUrl != null && !imageUrl.isEmpty()) {
                 Glide.with(holder.itemView.getContext())
@@ -143,26 +188,18 @@ public class HomeFragment extends Fragment {
                         .load(R.drawable.ic_error_24)
                         .into(holder.paintingImage);
             }
-            // Click on painting image launches ViewPaintingActivity
-            holder.paintingImage.setOnClickListener(v -> {
-                Intent intent = new Intent(holder.itemView.getContext(), ViewPaintingActivity.class);
-                intent.putExtra("painting", painting);
-                startActivityForResult(intent, REQUEST_CODE_VIEW_PAINTING);
-            });
 
-            // 2) Create your GestureDetector *with* onDown() returning true:
+            // Gesture detection for single and double tap
             GestureDetector gestureDetector = new GestureDetector(
                     holder.itemView.getContext(),
                     new GestureDetector.SimpleOnGestureListener() {
                         @Override
                         public boolean onDown(MotionEvent e) {
-                            // Must return true to get subsequent events
                             return true;
                         }
 
                         @Override
                         public boolean onSingleTapConfirmed(MotionEvent e) {
-                            // Single‐tap: open the detail page
                             Intent intent = new Intent(holder.itemView.getContext(), ViewPaintingActivity.class);
                             intent.putExtra("painting", painting);
                             startActivityForResult(intent, REQUEST_CODE_VIEW_PAINTING);
@@ -171,103 +208,66 @@ public class HomeFragment extends Fragment {
 
                         @Override
                         public boolean onDoubleTap(MotionEvent e) {
-                            // Double‐tap: “click” the like button
                             holder.likeButton.performClick();
                             return true;
                         }
                     }
             );
-
-            // Wire the detector into the ImageView’s touch events:
             holder.paintingImage.setOnTouchListener((v, event) -> {
-                // Let gestureDetector handle it (always return true so we intercept taps)
                 gestureDetector.onTouchEvent(event);
                 return true;
             });
 
-            // Author name and profile image
+            // Author info and profile image loading
             if (painting.getIsAnonymous()) {
                 holder.userName.setText("Anonymous");
                 Glide.with(holder.itemView.getContext())
                         .load(R.drawable.default_profile)
-                        .placeholder(R.drawable.default_profile)
-                        .error(R.drawable.default_profile)
                         .transform(new CircleCrop())
                         .into(holder.userPhoto);
             } else {
-                if (painting.getAuthorName() != null && !painting.getAuthorName().isEmpty()) {
-                    holder.userName.setText(painting.getAuthorName());
-                } else {
-                    holder.userName.setText("Unknown");
-                }
-                // Load user profile image from Storage using the uid.
-                String uid = painting.getUid();
-                FirebaseStorage storage = FirebaseStorage.getInstance();
-                StorageReference storageRef = storage.getReference().child("profile_images").child(uid + ".jpg");
-                storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    Glide.with(holder.itemView.getContext())
-                            .load(uri)
-                            .placeholder(R.drawable.default_profile)
-                            .error(R.drawable.default_profile)
-                            .transform(new CircleCrop())
-                            .into(holder.userPhoto);
-                }).addOnFailureListener(e -> {
-                    Glide.with(holder.itemView.getContext())
-                            .load(R.drawable.default_profile)
-                            .placeholder(R.drawable.default_profile)
-                            .error(R.drawable.default_profile)
-                            .transform(new CircleCrop())
-                            .into(holder.userPhoto);
-                });
+                String author = painting.getAuthorName();
+                holder.userName.setText(author != null && !author.isEmpty() ? author : "Unknown");
+                StorageReference storageRef = FirebaseStorage.getInstance()
+                        .getReference().child("profile_images").child(painting.getUid() + ".jpg");
+                storageRef.getDownloadUrl().addOnSuccessListener(uri -> Glide.with(holder.itemView.getContext())
+                                .load(uri).transform(new CircleCrop()).into(holder.userPhoto))
+                        .addOnFailureListener(e -> Glide.with(holder.itemView.getContext())
+                                .load(R.drawable.default_profile).transform(new CircleCrop()).into(holder.userPhoto));
             }
 
-            // Like button logic (unchanged from your previous code)
+            // Like button state and click behavior
             final String currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            if (painting.getLikedBy() != null && painting.getLikedBy().contains(currentUid)) {
-                holder.likeButton.setImageResource(R.drawable.ic_like_on);
-            } else {
-                holder.likeButton.setImageResource(R.drawable.ic_like_off);
-            }
+            holder.likeButton.setImageResource(
+                    painting.getLikedBy() != null && painting.getLikedBy().contains(currentUid)
+                            ? R.drawable.ic_like_on : R.drawable.ic_like_off
+            );
             holder.likeButton.setOnClickListener(v -> {
                 LoadingManagerDialog.showLoading(getActivity(), "Processing…");
                 DocumentReference docRef = FirebaseFirestore.getInstance()
-                        .collection("paintings")
-                        .document(painting.getDocId());
+                        .collection("paintings").document(painting.getDocId());
                 FirebaseFirestore.getInstance().runTransaction(transaction -> {
                     DocumentSnapshot snapshot = transaction.get(docRef);
                     List<String> likedBy = (List<String>) snapshot.get("likedBy");
-                    if (likedBy != null && likedBy.contains(currentUid)) {
-                        transaction.update(docRef, "likedBy", FieldValue.arrayRemove(currentUid));
-                        transaction.update(docRef, "likes", FieldValue.increment(-1));
-                        return "unliked";
-                    } else {
-                        transaction.update(docRef, "likedBy", FieldValue.arrayUnion(currentUid));
-                        transaction.update(docRef, "likes", FieldValue.increment(1));
-                        return "liked";
-                    }
+                    boolean liked = likedBy != null && likedBy.contains(currentUid);
+                    transaction.update(docRef, "likedBy", liked
+                            ? FieldValue.arrayRemove(currentUid)
+                            : FieldValue.arrayUnion(currentUid));
+                    transaction.update(docRef, "likes", FieldValue.increment(liked ? -1 : 1));
+                    return liked ? "unliked" : "liked";
                 }).addOnSuccessListener(result -> {
-                    if (result.equals("liked")) {
-                        holder.likeButton.setImageResource(R.drawable.ic_like_on);
-                        holder.likeButton.animate()
-                                .scaleX(1.3f).scaleY(1.3f)
-                                .setDuration(150)
-                                .withEndAction(() -> holder.likeButton.animate().scaleX(1f).scaleY(1f).setDuration(150).start())
-                                .start();
-                        painting.setLikes(painting.getLikes() + 1);
-                        if (painting.getLikedBy() != null) {
-                            painting.getLikedBy().add(currentUid);
-                        }
-                    } else if (result.equals("unliked")) {
-                        holder.likeButton.setImageResource(R.drawable.ic_like_off);
-                        holder.likeButton.animate()
-                                .scaleX(0.7f).scaleY(0.7f)
-                                .setDuration(150)
-                                .withEndAction(() -> holder.likeButton.animate().scaleX(1f).scaleY(1f).setDuration(150).start())
-                                .start();
-                        painting.setLikes(painting.getLikes() - 1);
-                        if (painting.getLikedBy() != null) {
-                            painting.getLikedBy().remove(currentUid);
-                        }
+                    boolean nowLiked = "liked".equals(result);
+                    holder.likeButton.setImageResource(nowLiked ? R.drawable.ic_like_on : R.drawable.ic_like_off);
+                    holder.likeButton.animate()
+                            .scaleX(nowLiked ? 1.3f : 0.7f)
+                            .scaleY(nowLiked ? 1.3f : 0.7f)
+                            .setDuration(150)
+                            .withEndAction(() -> holder.likeButton.animate().scaleX(1f).scaleY(1f).setDuration(150).start())
+                            .start();
+                    painting.setLikes(painting.getLikes() + (nowLiked ? 1 : -1));
+                    if (painting.getLikedBy() != null) {
+                        if (nowLiked) painting.getLikedBy().add(currentUid);
+                        else painting.getLikedBy().remove(currentUid);
                     }
                     holder.likeCount.setText(painting.getLikes() + " likes");
                     LoadingManagerDialog.hideLoading();
@@ -284,48 +284,61 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    /**
+     * Handles result from ViewPaintingActivity to refresh list on changes.
+     *
+     * @param requestCode Request code supplied.
+     * @param resultCode  Result code returned.
+     * @param data        Intent containing result data.
+     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == REQUEST_CODE_VIEW_PAINTING && resultCode == Activity.RESULT_OK) {
-            // Refresh the paintings after deletion or any modification.
+        if (requestCode == REQUEST_CODE_VIEW_PAINTING && resultCode == Activity.RESULT_OK) {
             loadPaintings();
         }
     }
 
+    /**
+     * Configures a TextView to expand/collapse long text with a toggle.
+     *
+     * @param contentTextView Main text view.
+     * @param toggleTextView  Toggle link view.
+     */
     private void setupExpandableText(TextView contentTextView, TextView toggleTextView) {
         contentTextView.setMaxLines(2);
+
+        // Set up click listener only once, outside the layout listener
+        toggleTextView.setOnClickListener(v -> {
+            if (contentTextView.getMaxLines() == 2) {
+                contentTextView.setMaxLines(Integer.MAX_VALUE);
+                toggleTextView.setText("Show less");
+            } else {
+                contentTextView.setMaxLines(2);
+                toggleTextView.setText("Show more");
+            }
+        });
 
         contentTextView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             if (contentTextView.getLayout() != null) {
                 boolean isEllipsized = contentTextView.getLayout().getEllipsisCount(1) > 0;
-
                 int lineCount = contentTextView.getLineCount();
-
                 if (isEllipsized || lineCount > 2) {
                     toggleTextView.setVisibility(View.VISIBLE);
-                    toggleTextView.setText("Show more");
-
-                    toggleTextView.setOnClickListener(v -> {
-                        if (contentTextView.getMaxLines() == 2) {
-                            contentTextView.setMaxLines(Integer.MAX_VALUE);
-                            toggleTextView.setText("Show less");
-                        } else {
-                            contentTextView.setMaxLines(2);
-                            toggleTextView.setText("Show more");
-                        }
-
-                    });
+                    // Don't set the text if we're expanded (maxLines > 2)
+                    if (contentTextView.getMaxLines() <= 2) {
+                        toggleTextView.setText("Show more");
+                    }
                 } else {
                     toggleTextView.setVisibility(View.GONE);
                 }
-
             }
         });
     }
-
+    /**
+     * Loads painting data from Firestore, builds Painting objects, and updates adapter.
+     */
     private void loadPaintings() {
-
         LoadingManagerDialog.showLoading(getActivity(), "Loading paintings…");
 
         FirebaseFirestore.getInstance()
@@ -383,7 +396,6 @@ public class HomeFragment extends Fragment {
 
                         paintingList.add(painting);
                     }
-
                     adapter.notifyDataSetChanged();
                     LoadingManagerDialog.hideLoading();
                 })
@@ -393,8 +405,12 @@ public class HomeFragment extends Fragment {
                 });
     }
 
-
-
+    /**
+     * Loads background color from SharedPreferences and applies to root view.
+     *
+     * @param activity Activity context for SharedPreferences.
+     * @param view     Root view to apply background color.
+     */
     public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("bgColor", (R.color.Default));

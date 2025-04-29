@@ -20,15 +20,36 @@ import com.example.login.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * PaintSettingsDialogFragment is responsible for showing a dialog where the user can:
+ * - Choose a color.
+ * - Pick a brush size.
+ * - Select a tool (Brush, Eraser, Line, Fill).
+ * - See and choose from a list of recently used colors.
+ * 
+ * This class manages saving, loading, and animating color and tool selections.
+ */
 public class PaintSettingsDialogFragment {
 
+    /**
+     * Listener interface to return the selected paint settings.
+     */
     public interface OnPaintSettingsSelectedListener {
         void onSettingsSelected(int color, int brushSize, String tool);
     }
 
-    // Recent colors is now unlimited (you may want to eventually persist a limit if memory is a concern)
+    // List of recent colors used (no limitation on size).
     private static List<Integer> recentColors = new ArrayList<>();
 
+    /**
+     * Displays the Paint Settings Dialog.
+     *
+     * @param context The context to create the dialog in.
+     * @param initialColor Initial selected color.
+     * @param initialBrushSize Initial brush size.
+     * @param initialTool Initial tool selected (Brush, Eraser, etc.).
+     * @param listener Listener to handle the settings when applied.
+     */
     public static void show(Context context, int initialColor, int initialBrushSize, String initialTool, OnPaintSettingsSelectedListener listener) {
         Dialog dialog = new Dialog(context);
         View view = LayoutInflater.from(context).inflate(R.layout.fragment_paint_settings_dialog, null);
@@ -48,7 +69,7 @@ public class PaintSettingsDialogFragment {
         final String[] selectedTool = {initialTool};
         seekBarSize.setProgress(initialBrushSize);
 
-        // Ensure a default (black) is present if not already added.
+        // Ensure black color is always available.
         if (!recentColors.contains(Color.BLACK)) {
             recentColors.add(0, Color.BLACK);
         }
@@ -77,11 +98,13 @@ public class PaintSettingsDialogFragment {
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         loadBtnColor((ViewGroup) view, context);
-
         updateRecentColors(recentColorsLayout, context, selectedColor, btnColorPicker);
         dialog.show();
     }
 
+    /**
+     * Helper method to select a tool and update button appearance.
+     */
     private static void selectTool(Button selectedButton, String[] selectedTool, String tool, Button... otherButtons) {
         selectedTool[0] = tool;
         selectedButton.setAlpha(1.0f);
@@ -90,6 +113,9 @@ public class PaintSettingsDialogFragment {
         }
     }
 
+    /**
+     * Highlights the initially selected tool when the dialog loads.
+     */
     private static void highlightSelectedTool(String tool, Button btnBrush, Button btnEraser, Button btnLine, Button btnFill) {
         btnBrush.setAlpha(tool.equals("Brush") ? 1.0f : 0.5f);
         btnEraser.setAlpha(tool.equals("Eraser") ? 1.0f : 0.5f);
@@ -97,19 +123,27 @@ public class PaintSettingsDialogFragment {
         btnFill.setAlpha(tool.equals("Fill") ? 1.0f : 0.5f);
     }
 
+    /**
+     * Clears all recent colors except default black.
+     */
     public static void clearRecentColors() {
         recentColors.clear();
         recentColors.add(Color.BLACK);
     }
 
+    /**
+     * Adds a color to the recent colors list and updates the UI.
+     */
     private static void addRecentColor(int color, LinearLayout layout, Context context, int[] selectedColor, Button btnColorPicker) {
-        // Removed limitation: never remove a recent color based on list size.
         if (!recentColors.contains(color)) {
             recentColors.add(color);
         }
         updateRecentColors(layout, context, selectedColor, btnColorPicker);
     }
 
+    /**
+     * Updates the recent colors section with clickable color buttons.
+     */
     private static void updateRecentColors(LinearLayout layout, Context context, int[] selectedColor, Button btnColorPicker) {
         layout.removeAllViews();
         Button lastSelectedButton = null;
@@ -143,6 +177,9 @@ public class PaintSettingsDialogFragment {
         }
     }
 
+    /**
+     * Highlights the currently selected recent color with a white border.
+     */
     private static void highlightSelectedColor(Button selectedButton, LinearLayout layout) {
         for (int i = 0; i < layout.getChildCount(); i++) {
             View child = layout.getChildAt(i);
@@ -161,6 +198,9 @@ public class PaintSettingsDialogFragment {
         selectedButton.setBackground(borderDrawable);
     }
 
+    /**
+     * Animates the transition between old and new colors on a button.
+     */
     private static void animateColorTransition(Button button, int oldColor, int newColor) {
         button.setBackgroundColor(newColor);
         button.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).withEndAction(() ->
@@ -171,12 +211,16 @@ public class PaintSettingsDialogFragment {
         colorAnimator.start();
     }
 
+    /**
+     * Updates a button's background color.
+     */
     private static void updateButtonColor(Button button, int color) {
         button.setBackgroundColor(color);
     }
 
-// Inside the PaintSettingsDialogFragment class
-
+    /**
+     * Loads the user's button color from SharedPreferences and applies it to all buttons except the Color Picker.
+     */
     private static void loadBtnColor(ViewGroup rootView, Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
 
@@ -186,7 +230,7 @@ public class PaintSettingsDialogFragment {
         ColorStateList buttonColor = ColorStateList.valueOf(color);
 
         for (int i = 0; i < rootView.getChildCount(); i++) {
-            if (rootView.getChildAt(i)!= btnColorPicker) {
+            if (rootView.getChildAt(i) != btnColorPicker) {
                 View childView = rootView.getChildAt(i);
                 if (childView instanceof Button) {
                     ((Button) childView).setBackgroundTintList(buttonColor);

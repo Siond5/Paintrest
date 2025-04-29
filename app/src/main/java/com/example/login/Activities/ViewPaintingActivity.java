@@ -46,18 +46,26 @@ import java.io.FileOutputStream;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Activity for viewing a painting in detail.
+ * Displays the painting, metadata, and allows like, delete, and share actions.
+ */
 public class ViewPaintingActivity extends AppCompatActivity implements View.OnClickListener {
 
     private ImageView ivPainting;
     private ImageView ivLikeButton;
     private Button btnBack, btnDelete, btnShare;
-    private TextView tvPaintingName, tvPaintingDate, tvPaintingDescription, tvPaintingLikes, tvAuthor, tvPaintingNameMore, tvPaintingDescriptionMore;;
+    private TextView tvPaintingName, tvPaintingDate, tvPaintingDescription, tvPaintingLikes, tvAuthor, tvPaintingNameMore, tvPaintingDescriptionMore;
     private Painting painting; // Passed via Intent (Serializable)
     private View view;
     private ScrollView bottomPane;
     private Guideline guideline;
     SharedPreferences sp;
 
+    /**
+     * Initializes the activity, finds UI elements, and sets up interactions.
+     * @param savedInstanceState saved state bundle
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,7 +92,6 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         btnDelete.setOnClickListener(this);
         btnShare.setOnClickListener(this);
 
-
         sp = this.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
 
         setupExpandableText(tvPaintingName, tvPaintingNameMore);
@@ -107,55 +114,43 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         loadBgColor();
         adjustGuideline();
 
-
-
         // make sure the ImageView is clickable
         ivPainting.setClickable(true);
 
-        // 1) create the GestureDetector
+        // gesture detector for double-tap like
         GestureDetector gestureDetector = new GestureDetector(
                 this,
                 new GestureDetector.SimpleOnGestureListener() {
                     @Override
                     public boolean onDown(MotionEvent e) {
-                        // must return true to get further events
                         return true;
                     }
-
                     @Override
                     public boolean onDoubleTap(MotionEvent e) {
-                        // forward to your like-button logic
                         ivLikeButton.performClick();
                         return true;
                     }
-
-                    // Optional: if you want to react to single–tap in this view,
-                    // you could override onSingleTapConfirmed(...)
                 }
         );
-
-        // 2) wire it into the ImageView’s touch events
         ivPainting.setOnTouchListener((v, event) -> {
             gestureDetector.onTouchEvent(event);
-            // consume all touches here so they don’t “leak” elsewhere
             return true;
         });
     }
 
+    /**
+     * Adjusts the bottom pane guideline based on content size.
+     */
     private void adjustGuideline() {
         bottomPane.post(() -> {
             View content = bottomPane.getChildAt(0);
-
             int wSpec = View.MeasureSpec.makeMeasureSpec(bottomPane.getWidth(), View.MeasureSpec.AT_MOST);
             int hSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
             content.measure(wSpec, hSpec);
             int contentH = content.getMeasuredHeight();
-
             int totalH = view.getHeight();
             float maxBot = totalH * 0.35f;
-
             if (contentH <= maxBot) {
-                // Content small, move guideline up (so bottomPane wraps nicely)
                 float topPct = 1f - ((float) contentH / totalH);
                 topPct = Math.max(0.65f, Math.min(topPct, 1f));
                 guideline.setGuidelinePercent(topPct);
@@ -165,131 +160,87 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         });
     }
 
+    /**
+     * Configures expandable text behavior for name and description fields.
+     */
     private void setupExpandableText(TextView contentTextView, TextView toggleTextView) {
         contentTextView.setMaxLines(2);
+
+        // Set up click listener only once, outside the layout listener
+        toggleTextView.setOnClickListener(v -> {
+            if (contentTextView.getMaxLines() == 2) {
+                contentTextView.setMaxLines(Integer.MAX_VALUE);
+                toggleTextView.setText("Show less");
+            } else {
+                contentTextView.setMaxLines(2);
+                toggleTextView.setText("Show more");
+            }
+            adjustGuideline();
+        });
 
         contentTextView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             if (contentTextView.getLayout() != null) {
                 boolean isEllipsized = contentTextView.getLayout().getEllipsisCount(1) > 0;
-
-                // Or check if there would be more lines than max
                 int lineCount = contentTextView.getLineCount();
-
                 if (isEllipsized || lineCount > 2) {
                     toggleTextView.setVisibility(View.VISIBLE);
-                    toggleTextView.setText("Show more");
-
-                    toggleTextView.setOnClickListener(v -> {
-                        if (contentTextView.getMaxLines() == 2) {
-                            contentTextView.setMaxLines(Integer.MAX_VALUE);
-                            toggleTextView.setText("Show less");
-                        } else {
-                            contentTextView.setMaxLines(2);
-                            toggleTextView.setText("Show more");
-                        }
-                        // Make sure to adjust layout after changing max lines
-                        adjustGuideline();
-                    });
+                    // Don't set the text if we're expanded (maxLines > 2)
+                    if (contentTextView.getMaxLines() <= 2) {
+                        toggleTextView.setText("Show more");
+                    }
                 } else {
                     toggleTextView.setVisibility(View.GONE);
                 }
-
-                // Adjust guideline after determining toggle visibility
                 adjustGuideline();
             }
         });
     }
-
-//    private void setupExpandableText(TextView contentTextView, TextView toggleTextView) {
-//        contentTextView.post(() -> {
-//            final int maxLines = 2;
-//
-//            // Save the current maxLines
-//            int originalMaxLines = contentTextView.getMaxLines();
-//
-//            // Temporarily remove constraints to measure total possible lines
-//            contentTextView.setMaxLines(Integer.MAX_VALUE);
-//
-//            // Force layout to get accurate measurements
-//            contentTextView.measure(
-//                    View.MeasureSpec.makeMeasureSpec(contentTextView.getWidth(), View.MeasureSpec.EXACTLY),
-//                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-//            );
-//
-//            // Get the actual line count when unconstrained
-//            int totalLines = contentTextView.getLineCount();
-//
-//            // Reset to original setting
-//            contentTextView.setMaxLines(originalMaxLines);
-//
-//            // Only show toggle if there are strictly more than maxLines
-//            if (totalLines > maxLines) {
-//                toggleTextView.setVisibility(View.VISIBLE);
-//                toggleTextView.setText("Show more");
-//                toggleTextView.setOnClickListener(v -> {
-//                    boolean expand = contentTextView.getMaxLines() == maxLines;
-//                    contentTextView.setMaxLines(expand ? Integer.MAX_VALUE : maxLines);
-//                    toggleTextView.setText(expand ? "Show less" : "Show more");
-//                });
-//            } else {
-//                toggleTextView.setVisibility(View.GONE);
-//            }
-//
-//            adjustGuideline();
-//        });
-//    }
-
-
+    /**
+     * Loads painting details and displays them in the UI.
+     */
     private void loadPaintingDetails() {
         painting = (Painting) getIntent().getSerializableExtra("painting");
         if (painting != null) {
-            // Load the painting image.
             loadPainting(painting.getImageUrl());
-
             tvPaintingName.setText(painting.getName());
             String formattedDate = DateFormat.format("MMM dd, yyyy hh:mm a", new Date(painting.getCreationTime())).toString();
             tvPaintingDate.setText(formattedDate);
-
             if (painting.getDescription() != null && !painting.getDescription().isEmpty()) {
                 tvPaintingDescription.setText(painting.getDescription());
             } else {
                 tvPaintingDescription.setVisibility(GONE);
             }
-
             tvPaintingLikes.setText("Likes: " + painting.getLikes());
-
-            // For the author details:
             if (painting.getIsAnonymous()) {
                 tvAuthor.setText("By: Anonymous");
+            } else {
+                String uid = painting.getUid();
+                FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(uid)
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            if (documentSnapshot.exists()) {
+                                String firstName = documentSnapshot.getString("firstName");
+                                String lastName = documentSnapshot.getString("lastName");
+                                String fullName = (firstName != null && lastName != null)
+                                        ? firstName + " " + lastName : "Unknown";
+                                tvAuthor.setText("By: "+fullName);
+                                painting.setAuthorName(fullName);
+                            } else {
+                                tvAuthor.setText("Unknown");
+                            }
+                        })
+                        .addOnFailureListener(e -> tvAuthor.setText("Unknown"));
             }
-                 else {
-                    // Fetch from Firestore as a fallback.
-                    String uid = painting.getUid();
-                    FirebaseFirestore.getInstance()
-                            .collection("users")
-                            .document(uid)
-                            .get()
-                            .addOnSuccessListener(documentSnapshot -> {
-                                if (documentSnapshot.exists()) {
-                                    String firstName = documentSnapshot.getString("firstName");
-                                    String lastName = documentSnapshot.getString("lastName");
-                                    String fullName = (firstName != null && lastName != null)
-                                            ? firstName + " " + lastName : "Unknown";
-                                    tvAuthor.setText("By: "+fullName);
-                                    // Optionally, update the painting's authorName for future use.
-                                    painting.setAuthorName(fullName);
-                                } else {
-                                    tvAuthor.setText("Unknown");
-                                }
-                            })
-                            .addOnFailureListener(e -> tvAuthor.setText("Unknown"));
-                }
-            }
-         else {
+        } else {
             Toast.makeText(this, "No painting available", Toast.LENGTH_SHORT).show();
         }
     }
 
+    /**
+     * Loads the painting image from a URL or URI into the ImageView.
+     */
     private void loadPainting(String imageUrl) {
         if (imageUrl == null) {
             Toast.makeText(this, "No painting available", Toast.LENGTH_SHORT).show();
@@ -310,25 +261,23 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         }
     }
 
+    /**
+     * Sets up like button state and click handling with Firebase.
+     */
     private void setupLikeButton() {
-        // Ensure ivLikeButton is not null and painting is loaded.
         if (ivLikeButton != null && painting != null) {
             final String currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
-            // Set initial like state.
             if (painting.getLikedBy() != null && painting.getLikedBy().contains(currentUid)) {
                 ivLikeButton.setImageResource(R.drawable.ic_like_on);
             } else {
                 ivLikeButton.setImageResource(R.drawable.ic_like_off);
             }
-
             ivLikeButton.setOnClickListener(v -> {
-                LoadingManagerDialog.showLoading(this, "Processing…");
+                LoadingManagerDialog.showLoading(this, "Processing...");
                 DocumentReference docRef = FirebaseFirestore.getInstance()
                         .collection("paintings")
                         .document(painting.getDocId());
                 FirebaseFirestore.getInstance().runTransaction(transaction -> {
-
                     DocumentSnapshot snapshot = transaction.get(docRef);
                     List<String> likedBy = (List<String>) snapshot.get("likedBy");
                     if (likedBy != null && likedBy.contains(currentUid)) {
@@ -352,8 +301,7 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                         if (painting.getLikedBy() != null) {
                             painting.getLikedBy().add(currentUid);
                         }
-                    }
-                    else if (result.equals("unliked")) {
+                    } else if (result.equals("unliked")) {
                         ivLikeButton.setImageResource(R.drawable.ic_like_off);
                         ivLikeButton.animate()
                                 .scaleX(0.7f).scaleY(0.7f)
@@ -371,11 +319,14 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                     Toast.makeText(ViewPaintingActivity.this, "Failed to update like", Toast.LENGTH_SHORT).show();
                     LoadingManagerDialog.hideLoading();
                 });
-
             });
         }
     }
 
+    /**
+     * Handles clicks on back, delete, and share buttons.
+     * @param v the clicked view
+     */
     @Override
     public void onClick(View v) {
         if (v == btnBack) {
@@ -387,6 +338,9 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
         }
     }
 
+    /**
+     * Prompts deletion confirmation and deletes painting and storage.
+     */
     private void deletePainting() {
         new AlertDialog.Builder(this)
                 .setTitle("Delete Painting")
@@ -397,8 +351,6 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                         return;
                     }
                     LoadingManagerDialog.showLoading(this, "Deleting painting...");
-
-                    // Delete the painting image from Firebase Storage.
                     StorageReference imageRef = FirebaseStorage.getInstance().getReferenceFromUrl(painting.getImageUrl());
                     imageRef.delete().addOnSuccessListener(aVoid -> {
                         FirebaseFirestore.getInstance()
@@ -411,81 +363,78 @@ public class ViewPaintingActivity extends AppCompatActivity implements View.OnCl
                                     finish();
                                     LoadingManagerDialog.hideLoading();
                                 })
-                                .addOnFailureListener ( e -> {Toast.makeText(this, "Failed to delete painting metadata", Toast.LENGTH_SHORT).show();
-                            LoadingManagerDialog.hideLoading();});
-                    }).addOnFailureListener(e -> {Toast.makeText(this, "Failed to delete painting from storage", Toast.LENGTH_SHORT).show();
-                            LoadingManagerDialog.hideLoading();});
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(this, "Failed to delete painting metadata", Toast.LENGTH_SHORT).show();
+                                    LoadingManagerDialog.hideLoading();
+                                });
+                    }).addOnFailureListener(e -> {
+                        Toast.makeText(this, "Failed to delete painting from storage", Toast.LENGTH_SHORT).show();
+                        LoadingManagerDialog.hideLoading();
+                    });
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
+    /**
+     * Shares the painting image and details via an Android share intent.
+     */
     private void sharePainting() {
         if (painting == null || painting.getImageUrl() == null) {
             Toast.makeText(this, "Nothing to share", Toast.LENGTH_SHORT).show();
             return;
         }
-
         try {
             ivPainting.setDrawingCacheEnabled(true);
             Bitmap bitmap = Bitmap.createBitmap(ivPainting.getDrawingCache());
             ivPainting.setDrawingCacheEnabled(false);
-
             File cachePath = new File(getCacheDir(), "images");
-            if (!cachePath.exists()) {
-                cachePath.mkdirs();
-            }
+            if (!cachePath.exists()) cachePath.mkdirs();
             File file = new File(cachePath, "image.png");
             FileOutputStream stream = new FileOutputStream(file);
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
             stream.flush();
             stream.close();
-
             Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
-
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
             shareIntent.setType("image/png");
             shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            String author = painting.getIsAnonymous() ? "Anonymous" :
-                    (painting.getAuthorName() != null && !painting.getAuthorName().isEmpty() ? painting.getAuthorName() : "Unknown");
+            String author = painting.getIsAnonymous() ? "Anonymous" : painting.getAuthorName();
             shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Check out this painting!");
             shareIntent.putExtra(Intent.EXTRA_TEXT, "Check out this painting: " + painting.getName() +
                     "\nBy: " + author +
                     "\nDescription: " + painting.getDescription());
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
             startActivity(Intent.createChooser(shareIntent, "Share Painting"));
-
         } catch (Exception e) {
             Log.e("ViewPaintingActivity", "Failed to share painting: " + e.getMessage(), e);
             Toast.makeText(this, "Failed to share painting: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-
         }
     }
 
+    /**
+     * Loads background and button colors from SharedPreferences.
+     */
     public void loadBgColor() {
         int color = sp.getInt("bgColor", R.color.Default);
         view.setBackgroundColor(color);
         loadBtnColor((ViewGroup) view);
     }
 
+    /**
+     * Recursively applies button tint to all buttons in the view hierarchy.
+     * @param rootView the root view group
+     */
     private void loadBtnColor(ViewGroup rootView) {
         int color = sp.getInt("btnColor", R.color.button);
         ColorStateList buttonColor = ColorStateList.valueOf(color);
-
         for (int i = 0; i < rootView.getChildCount(); i++) {
             View childView = rootView.getChildAt(i);
-
-            // If the view is a button, apply the tint
             if (childView instanceof Button) {
                 ((Button) childView).setBackgroundTintList(buttonColor);
-            }
-
-            // If the view is a ViewGroup, recursively apply the tint to its children
-            else if (childView instanceof ViewGroup) {
+            } else if (childView instanceof ViewGroup) {
                 loadBtnColor((ViewGroup) childView);
             }
         }
     }
-
 }

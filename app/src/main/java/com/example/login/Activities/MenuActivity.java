@@ -1,3 +1,10 @@
+/**
+ * Main menu activity for the app.
+ *
+ * Initializes bottom navigation, loads user data and colors from Firebase,
+ * downloads the profile image, schedules daily notifications, and
+ * handles fragment navigation based on menu selections.
+ */
 package com.example.login.Activities;
 
 import android.app.AlarmManager;
@@ -32,10 +39,10 @@ import com.example.login.Notification_classes.NotificationReceiver;
 import com.example.login.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.navigation.NavigationBarView;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
 
 import java.io.File;
 import java.util.Calendar;
@@ -51,6 +58,12 @@ public class MenuActivity extends AppCompatActivity {
     private boolean isColorLoaded = false;
     private boolean isProfileImageLoaded = false;
 
+    /**
+     * Called when the activity is created.
+     * Sets the layout, initializes views, starts data loading and notification scheduling.
+     *
+     * @param savedInstanceState Saved state bundle
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,35 +74,47 @@ public class MenuActivity extends AppCompatActivity {
 
         progressBar.setVisibility(View.VISIBLE); // Show loading screen
         loadFromFirebase(this);
-        NotificationReceiver.createNotificationChannel(this);  // Make sure to create the notification channel
+        NotificationReceiver.createNotificationChannel(this);
 
         bottomNavigationView.setOnItemSelectedListener(
-                new NavigationBarView.OnItemSelectedListener() {
-                    @Override
-                    public boolean onNavigationItemSelected(MenuItem item) {
-                        itemId = item.getItemId();
+            new NavigationBarView.OnItemSelectedListener() {
+                /**
+                 * Handles bottom navigation item selection to switch fragments.
+                 *
+                 * @param item The selected menu item
+                 * @return true if the selection was handled
+                 */
+                @Override
+                public boolean onNavigationItemSelected(MenuItem item) {
+                    itemId = item.getItemId();
 
-                        if (itemId == R.id.menu_home) {
-                            createFragment(new HomeFragment());
-                            return true;
-                        } else if (itemId == R.id.menu_settings) {
-                            createFragment(new UserDetailsFragment());
-                            return true;
-                        } else if (itemId == R.id.menu_paint) {
-                            createFragment(new PaintFragment());
-                            return true;
-                        } else if (itemId == R.id.menu_profile) {
-                            createFragment(new ProfileFragment());
-                            return true;
-                        }
-                        return false;
+                    if (itemId == R.id.menu_home) {
+                        createFragment(new HomeFragment());
+                        return true;
+                    } else if (itemId == R.id.menu_settings) {
+                        createFragment(new UserDetailsFragment());
+                        return true;
+                    } else if (itemId == R.id.menu_paint) {
+                        createFragment(new PaintFragment());
+                        return true;
+                    } else if (itemId == R.id.menu_profile) {
+                        createFragment(new ProfileFragment());
+                        return true;
                     }
-                });
+                    return false;
+                }
+            });
 
-        // Now scheduling the notification in MenuActivity
+        // Schedule daily notification at 17:00
         scheduleRepeatingNotification(this);
     }
 
+    /**
+     * Loads user details, colors, and profile image from Firebase.
+     * Stores results in SharedPreferences and updates loading flags.
+     *
+     * @param activity The calling activity context
+     */
     public void loadFromFirebase(AppCompatActivity activity) {
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         String uid = fbAuth.getUid();
@@ -127,6 +152,10 @@ public class MenuActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if all data (user, colors, profile image) has been loaded.
+     * Hides the progress bar and shows navigation when loading is complete.
+     */
     private void checkLoadingComplete() {
         if (isUserLoaded && isColorLoaded && isProfileImageLoaded) {
             progressBar.setVisibility(View.GONE);
@@ -135,6 +164,11 @@ public class MenuActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Replaces the fragment container with the specified fragment.
+     *
+     * @param fragment The fragment to display
+     */
     private void createFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -142,20 +176,23 @@ public class MenuActivity extends AppCompatActivity {
         fragmentTransaction.commit();
     }
 
+    /**
+     * Schedules a one-time exact alarm at 17:00 each day to trigger notifications.
+     * Requests necessary permissions on Android 12+.
+     *
+     * @param context The context for AlarmManager and permission checks
+     */
     public void scheduleRepeatingNotification(Context context) {
-        // Ensure the context is valid before checking permissions
+        // Permission checks and alarm scheduling logic
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                // Request permission if not granted
                 ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
                 return;
             }
         }
 
-        // Check if we have permission to set exact alarms (for Android 12/S and above)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (!context.getSystemService(AlarmManager.class).canScheduleExactAlarms()) {
-                // Permission not granted, prompt the user to go to settings
                 Toast.makeText(context, "Please allow permission to schedule exact alarms", Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
                 context.startActivity(intent);
@@ -166,50 +203,53 @@ public class MenuActivity extends AppCompatActivity {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, NotificationReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Calendar calendar = Calendar.getInstance();
         int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
 
-        // Set the alarm for 17:00 (5:00 PM) today or the next day if it's already past 17:00
         if (currentHour >= 17) {
-            // If current time is 17:00 or later, set for the next day
-            calendar.add(Calendar.DAY_OF_YEAR, 1); // Add one day
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
         }
-
-        // Set the alarm time to 17:00:00 (5:00 PM)
         calendar.set(Calendar.HOUR_OF_DAY, 17);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
 
-        // Set the exact alarm initially
-       // long dayInMillis = 86400000; // 24 hours in milliseconds
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-       // alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),dayInMillis, pendingIntent);
     }
 
+    /**
+     * Downloads the user's profile image from Firebase Storage into cache.
+     * Stores the local URI in SharedPreferences when successful.
+     *
+     * @param activity The calling activity context
+     */
     public void downloadProfileImage(AppCompatActivity activity) {
         FirebaseStorage storage = FirebaseStorage.getInstance();
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         String uid = fbAuth.getCurrentUser().getUid();
         StorageReference storageRef = storage.getReference().child("profile_images").child(uid + ".jpg");
         SharedPreferences sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE).edit();
-        // Create a local file in the cache directory; change location as needed.
+        SharedPreferences.Editor editor = sharedPreferences.edit();
         File localFile = new File(this.getCacheDir(), "profile_" + System.currentTimeMillis() + ".jpg");
         storageRef.getFile(localFile)
-                .addOnSuccessListener(taskSnapshot -> {
-                            Uri localUri = Uri.fromFile(localFile);
-                            String photoUri = localUri.toString();
-                            editor.putString("profileImageUri", photoUri);
-                            editor.apply();
-                        })
-         .addOnFailureListener(e ->        sharedPreferences.edit().remove("profileImageUri").apply() );
+            .addOnSuccessListener(taskSnapshot -> {
+                Uri localUri = Uri.fromFile(localFile);
+                editor.putString("profileImageUri", localUri.toString());
+                editor.apply();
+            })
+            .addOnFailureListener(e -> sharedPreferences.edit().remove("profileImageUri").apply());
 
         isProfileImageLoaded = true;
         checkLoadingComplete();
     }
 
+    /**
+     * Retrieves a color resource as an integer using ContextCompat.
+     *
+     * @param color The resource ID of the color
+     * @return The color int
+     */
     public int getContextColor(int color) {
         return ContextCompat.getColor(this, color);
     }

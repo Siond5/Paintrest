@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.login.Activities.ViewPaintingActivity;
-import com.example.login.Classes.Painting; // Use updated Painting class
+import com.example.login.Classes.Painting;
 import com.example.login.Dialogs.LoadingManagerDialog;
 import com.example.login.Views.PaintingItemView;
 import com.example.login.R;
@@ -34,32 +34,73 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment displaying the current user's profile information and their paintings.
+ * <p>
+ * Shows the user's name, profile image, and a grid of their paintings.
+ * Supports viewing individual painting details and handles empty state.
+ * </p>
+ */
 public class ProfileFragment extends Fragment {
 
+    /** Request code for launching the painting detail activity. */
     private static final int REQUEST_CODE_VIEW_PAINTING = 1001;
 
+    /** SharedPreferences for retrieving user details and settings. */
     private SharedPreferences sharedPreferences;
+
+    /** TextView showing the number of paintings. */
     private TextView numOfPaintings, FullName;
+
+    /** ImageView displaying the user's profile image. */
     private ImageView profileImage;
+
+    /** RecyclerView displaying the user's paintings in a grid. */
     private RecyclerView paintingsRecyclerView;
+
+    /** Placeholder view shown when there are no paintings. */
     private TextView emptyPlaceholder;
+
+    /** Scrollable container for profile content. */
     private View scrollView;
+
+    /** List backing the RecyclerView adapter. */
     private List<Painting> paintings = new ArrayList<>();
+
+    /** Adapter for painting items. */
     private PaintingItemView adapter;
 
+    /**
+     * Required empty public constructor.
+     */
     public ProfileFragment() {
         // Required empty public constructor
     }
 
+    /**
+     * Called to do initial creation of the fragment.
+     *
+     * @param savedInstanceState If the fragment is being re-created, this contains the previous state.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
 
+    /**
+     * Creates and returns the view hierarchy associated with the fragment.
+     * <p>
+     * Inflates the profile layout, initializes UI components, and loads user details and paintings.
+     * </p>
+     *
+     * @param inflater           The LayoutInflater object that can be used to inflate any views.
+     * @param container          If non-null, this is the parent view the fragment's UI should attach to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return The root View of the fragment's layout.
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
         loadBgColor(getActivity(), view);
 
@@ -86,12 +127,20 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Called when the fragment is visible to the user and actively running.
+     * Reloads the user's paintings.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadUserPaintings();
     }
 
+    /**
+     * Loads the user's name and profile image from SharedPreferences.
+     * Shows a toast on failure.
+     */
     private void loadUserDetails() {
         try {
             sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
@@ -100,7 +149,6 @@ public class ProfileFragment extends Fragment {
             String savedUriString = sharedPreferences.getString("profileImageUri", null);
 
             if (firstName != null && lastName != null) {
-
                 FullName.setText(firstName + " " + lastName);
             } else {
                 Toast.makeText(getActivity(), "Failed to load details. Please try again later.", Toast.LENGTH_SHORT).show();
@@ -120,20 +168,28 @@ public class ProfileFragment extends Fragment {
         } catch (Exception e) {
             Toast.makeText(getActivity(), "Failed to load details. Please try again later.", Toast.LENGTH_SHORT).show();
         }
-
     }
 
-
+    /**
+     * Receives results from ViewPaintingActivity and refreshes the list if needed.
+     *
+     * @param requestCode The integer request code originally supplied.
+     * @param resultCode  The integer result code returned by the child activity.
+     * @param data        An Intent, which can return result data to the caller.
+     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == REQUEST_CODE_VIEW_PAINTING && resultCode == Activity.RESULT_OK) {
+        if (requestCode == REQUEST_CODE_VIEW_PAINTING && resultCode == Activity.RESULT_OK) {
             // Refresh the paintings after deletion or any modification.
             loadUserPaintings();
         }
     }
 
-    // Loads paintings from Firestore and builds full Painting objects.
+    /**
+     * Loads the current user's paintings from Firestore, updates the RecyclerView,
+     * and handles empty state visibility.
+     */
     private void loadUserPaintings() {
         String currentUid = FirebaseAuth.getInstance().getUid();
         if (currentUid == null) {
@@ -187,8 +243,12 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-
-
+    /**
+     * Loads the saved background color from SharedPreferences and applies it to the view.
+     *
+     * @param activity Activity context for accessing SharedPreferences.
+     * @param view     The root view to apply the background color to.
+     */
     public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("bgColor", getResources().getColor(R.color.Default));

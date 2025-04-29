@@ -22,32 +22,43 @@ import com.example.login.R;
 
 import java.util.Calendar;
 
+/**
+ * BroadcastReceiver that handles alarm triggers to send daily notifications and reschedule the next alarm.
+ */
 public class NotificationReceiver extends BroadcastReceiver {
-    private static final String CHANNEL_ID = "default_channel";  // Notification channel ID
+    /** Notification channel ID for general reminders. */
+    private static final String CHANNEL_ID = "default_channel";
+
+    /** Tag for logging. */
     private static final String TAG = "NotificationReceiver";
 
+    /**
+     * Called when the alarm triggers. Acquires a wake lock, sends the notification, and schedules the next one.
+     *
+     * @param context The Context in which the receiver is running.
+     * @param intent  The Intent being received.
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Alarm triggered!");
-
-        // Acquire wake lock to ensure processing completes
         PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = powerManager.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
                 "MyApp:NotificationWakeLock");
-        wakeLock.acquire(10*60*1000L); // 10 minutes
-
+        wakeLock.acquire(10 * 60 * 1000L);
         try {
-            // Send notification
             sendNotification(context);
-
-            // Reschedule for tomorrow
             scheduleNextNotification(context);
         } finally {
             wakeLock.release();
         }
     }
 
+    /**
+     * Schedules the next daily notification at 17:00 local time.
+     *
+     * @param context The Context used to retrieve the AlarmManager.
+     */
     private void scheduleNextNotification(Context context) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent alarmIntent = new Intent(context, NotificationReceiver.class);
@@ -55,38 +66,47 @@ public class NotificationReceiver extends BroadcastReceiver {
                 context, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_YEAR, 1); // Tomorrow
+        calendar.add(Calendar.DAY_OF_YEAR, 1);
         calendar.set(Calendar.HOUR_OF_DAY, 17);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
 
-        // Use exact alarm if possible
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+                alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.getTimeInMillis(),
+                        pendingIntent);
             } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+                alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.getTimeInMillis(),
+                        pendingIntent);
             }
         } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+            alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.getTimeInMillis(),
+                    pendingIntent);
         }
         Log.d(TAG, "Next alarm scheduled for: " + calendar.getTime());
     }
 
+    /**
+     * Builds and displays the notification, handling runtime permission checks on Android 13+.
+     *
+     * @param context The Context used to build and show the notification.
+     */
     public static void sendNotification(Context context) {
-        // Check if notification permission is granted (Android 13 and above)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                // If permission is not granted, log and show toast
                 Log.d(TAG, "Notification permission not granted");
                 Toast.makeText(context, "Notification permission is not granted", Toast.LENGTH_SHORT).show();
-                return;  // Exit if permission is not granted
+                return;
             }
         }
-
         try {
-            // Create intent to open the app when notification is clicked
             Intent openAppIntent = new Intent(context, MainActivity.class);
             openAppIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -95,16 +115,14 @@ public class NotificationReceiver extends BroadcastReceiver {
                     openAppIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-            // Create notification with content intent
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                     .setContentTitle("Daily reminder")
                     .setContentText("This is your reminder to paint today")
                     .setSmallIcon(R.drawable.ic_launcher_square)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setContentIntent(pendingIntent)  // Add this to make notification clickable
+                    .setContentIntent(pendingIntent)
                     .setAutoCancel(true);
 
-            // Get the NotificationManager system service
             int notificationId = (int) System.currentTimeMillis();
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
             notificationManager.notify(notificationId, builder.build());
@@ -114,7 +132,11 @@ public class NotificationReceiver extends BroadcastReceiver {
         }
     }
 
-    // This method creates the notification channel for Android 8.0 (API 26) and above
+    /**
+     * Creates the notification channel on Android O and above.
+     *
+     * @param context The Context used to create the channel.
+     */
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "Default Channel";
@@ -122,8 +144,6 @@ public class NotificationReceiver extends BroadcastReceiver {
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
-
-            // Register the channel with the system
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);

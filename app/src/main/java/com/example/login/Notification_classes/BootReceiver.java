@@ -10,18 +10,41 @@ import android.util.Log;
 
 import java.util.Calendar;
 
+/**
+ * BroadcastReceiver that listens for device boot completion and reschedules daily notifications.
+ */
 public class BootReceiver extends BroadcastReceiver {
+    /**
+     * Tag for logging.
+     */
     private static final String TAG = "BootReceiver";
 
+    /**
+     * Called when the BroadcastReceiver receives an Intent broadcast.
+     * <p>
+     * If the broadcast action is BOOT_COMPLETED, it reschedules the daily notification.
+     * </p>
+     *
+     * @param context The Context in which the receiver is running.
+     * @param intent  The Intent being received.
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             Log.d(TAG, "Boot completed, rescheduling notifications");
-            // Reschedule the daily notification when the device boots
             scheduleDailyNotification(context);
         }
     }
 
+    /**
+     * Schedules a daily notification at 17:00 (5:00 PM) local time.
+     * <p>
+     * Uses exact alarms on Android S and above if permission is granted,
+     * otherwise falls back to inexact repeating alarms.
+     * </p>
+     *
+     * @param context The Context used to retrieve the AlarmManager.
+     */
     private void scheduleDailyNotification(Context context) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, NotificationReceiver.class);
@@ -45,7 +68,7 @@ public class BootReceiver extends BroadcastReceiver {
 
         Log.d(TAG, "Setting alarm for: " + calendar.getTime().toString());
 
-        // Check for Android S (12) and above for exact alarm permission
+        // Use exact alarms on Android S (12) and above if allowed
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(
@@ -56,7 +79,6 @@ public class BootReceiver extends BroadcastReceiver {
                 Log.d(TAG, "Exact alarm scheduled for: " + calendar.getTime().toString());
             } else {
                 Log.d(TAG, "Cannot schedule exact alarms - permission not granted");
-                // Fall back to inexact
                 alarmManager.setInexactRepeating(
                         AlarmManager.RTC_WAKEUP,
                         calendar.getTimeInMillis(),

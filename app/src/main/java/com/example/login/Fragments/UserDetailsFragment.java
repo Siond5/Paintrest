@@ -1,3 +1,8 @@
+/**
+ * Fragment to display and manage user details,
+ * including editing personal information, managing profile picture,
+ * authentication actions, and UI settings.
+ */
 package com.example.login.Fragments;
 
 import android.app.AlertDialog;
@@ -57,10 +62,22 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     private Uri profileImageUri;
     private SharedPreferences sharedPreferences;
 
+    /**
+     * Required empty public constructor.
+     */
     public UserDetailsFragment() {
         // Required empty public constructor
     }
 
+    /**
+     * Inflate fragment layout, initialize views, load saved details and picture,
+     * set up listeners and text watchers.
+     *
+     * @param inflater LayoutInflater to inflate the fragment XML
+     * @param container Parent view group
+     * @param savedInstanceState Bundle of saved state
+     * @return Inflated view for this fragment
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_user_details, container, false);
@@ -77,7 +94,6 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         btnChangePassword = view.findViewById(R.id.btnChangePassword);
         btnUserUi = view.findViewById(R.id.btnUserUi);
 
-
         loadBgColor(getActivity(), view);
         loadDetails();
         loadProfilePicture();
@@ -93,6 +109,9 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         return view;
     }
 
+    /**
+     * Attach TextWatchers to input fields for live validation.
+     */
     private void setUpTextWatchers() {
         etDetailsFirstName.addTextChangedListener(createValidationWatcher(etDetailsFirstName, "name"));
         etDetailsLastName.addTextChangedListener(createValidationWatcher(etDetailsLastName, "name"));
@@ -100,13 +119,19 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         etDetailsYOB.addTextChangedListener(createValidationWatcher(etDetailsYOB, "yearOfBirth"));
     }
 
+    /**
+     * Create a TextWatcher for a given field type.
+     *
+     * @param editText EditText to watch
+     * @param type     "name", "phone", or "yearOfBirth"
+     * @return Configured TextWatcher
+     */
     private TextWatcher createValidationWatcher(final EditText editText, final String type) {
         return new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
                 switch (type) {
                     case "name":
                         validateName(editText.getText().toString(), editText == etDetailsFirstName ? "first name" : "last name");
@@ -119,19 +144,25 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                         break;
                 }
             }
-
-            @Override
-            public void afterTextChanged(Editable editable) {}
         };
     }
 
+    /**
+     * Refresh background color when fragment resumes.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadBgColor(getActivity(), getView());
     }
 
-    // Name validation (first name or last name)
+    /**
+     * Validate a name field (first or last).
+     *
+     * @param name      Input name
+     * @param fieldName "first name" or "last name"
+     * @return true if non-empty, false otherwise
+     */
     private boolean validateName(String name, String fieldName) {
         if (name.isEmpty()) {
             if (fieldName.equals("first name")) {
@@ -140,17 +171,18 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 etDetailsLastName.setError("Please enter your last name.");
             }
             return false;
-        } else {
-            if (fieldName.equals("first name")) {
-                etDetailsFirstName.setError(null);
-            } else {
-                etDetailsLastName.setError(null);
-            }
-            return true;
         }
+        if (fieldName.equals("first name")) etDetailsFirstName.setError(null);
+        else etDetailsLastName.setError(null);
+        return true;
     }
 
-    // Phone validation
+    /**
+     * Validate phone number format (9-10 digits).
+     *
+     * @param phone Input phone number
+     * @return true if valid digits, false otherwise
+     */
     private boolean validatePhone(String phone) {
         if (phone.isEmpty()) {
             etDetailsPhone.setError("Please enter your phone number.");
@@ -158,13 +190,17 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         } else if (!phone.matches("\\d{9,10}")) {
             etDetailsPhone.setError("Phone must be 9-10 digits and contain only numbers.");
             return false;
-        } else {
-            etDetailsPhone.setError(null);
-            return true;
         }
+        etDetailsPhone.setError(null);
+        return true;
     }
 
-    // Year of birth validation
+    /**
+     * Validate year of birth format (4-digit number).
+     *
+     * @param yobStr Input year string
+     * @return true if exactly 4 digits and numeric, false otherwise
+     */
     private boolean validateYearOfBirth(String yobStr) {
         if (yobStr.isEmpty()) {
             etDetailsYOB.setError("Please enter your year of birth.");
@@ -172,33 +208,33 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         } else if (yobStr.length() != 4) {
             etDetailsYOB.setError("Year of birth must be exactly 4 digits.");
             return false;
-        } else {
-            try {
-                Integer.parseInt(yobStr);
-                etDetailsYOB.setError(null);
-                return true;
-            } catch (NumberFormatException e) {
-                etDetailsYOB.setError("Year of birth must be a valid number.");
-                return false;
-            }
+        }
+        try {
+            Integer.parseInt(yobStr);
+            etDetailsYOB.setError(null);
+            return true;
+        } catch (NumberFormatException e) {
+            etDetailsYOB.setError("Year of birth must be a valid number.");
+            return false;
         }
     }
 
+    /**
+     * Handle click events for save, logout, delete account,
+     * change password, and UI settings.
+     *
+     * @param view Clicked view
+     */
     @Override
     public void onClick(View view) {
         if (view == btnDetailsSave) {
-
             String firstName = etDetailsFirstName.getText().toString();
             String lastName = etDetailsLastName.getText().toString();
             String phone = etDetailsPhone.getText().toString();
             String yobStr = etDetailsYOB.getText().toString();
-
-            // valid fields by boolean variables
-            boolean isFirstNameValid = validateName(firstName, "first name");
-            boolean isLastNameValid = validateName(lastName, "last name");
-            boolean isPhoneValid = validatePhone(phone);
-            boolean isYOBValid = validateYearOfBirth(yobStr);
-            if (isFirstNameValid && isLastNameValid && isPhoneValid && isYOBValid) {
+            boolean validName = validateName(firstName, "first name") && validateName(lastName, "last name");
+            boolean validContact = validatePhone(phone) && validateYearOfBirth(yobStr);
+            if (validName && validContact) {
                 int yob = Integer.parseInt(yobStr);
                 FirebaseAuth fbAuth = FirebaseAuth.getInstance();
                 String uid = fbAuth.getUid();
@@ -208,169 +244,146 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 user.setLastName(lastName);
                 user.setPhone(phone);
                 user.setYob(yob);
-
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("firstName", firstName);
                 editor.putString("lastName", lastName);
                 editor.putString("phone", phone);
                 editor.putInt("yob", yob);
                 editor.apply();
-
                 store.collection("users").document(uid).set(user);
                 Toast.makeText(getActivity(), "Details saved", Toast.LENGTH_SHORT).show();
             }
-        }
-
-        else if (view == btnLogout) {
-            // Get the shared DrawingViewModel and reset it
+        } else if (view == btnLogout) {
             DrawingViewModel drawingViewModel = new ViewModelProvider(requireActivity()).get(DrawingViewModel.class);
             drawingViewModel.setHasLogOut(true);
             drawingViewModel.reset();
-
             FirebaseAuth.getInstance().signOut();
-
-            Intent intent = new Intent(getActivity(), MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            startActivity(new Intent(getActivity(), MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             getActivity().finish();
-        }
-
-
-        else if (view == btnDeleteAccount) {
+        } else if (view == btnDeleteAccount) {
             new AlertDialog.Builder(getActivity())
                     .setTitle("Delete Account")
                     .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        LoadingManagerDialog.showLoading(getActivity(), "Deleting account...");
-                        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-                        String uid = fbAuth.getUid();
-                        FirebaseFirestore store = FirebaseFirestore.getInstance();
-                        FirebaseStorage storage = FirebaseStorage.getInstance();
-
-                        try {
-                            StorageReference profileRef = storage.getReference().child("profile_images").child(uid + ".jpg");
-                            profileRef.delete().addOnFailureListener(e -> {
-                            });
-
-                            StorageReference paintingsRef = storage.getReference().child("paintings").child(uid);
-                            paintingsRef.listAll()
-                                    .addOnSuccessListener(listResult -> {
-                                        for (StorageReference item : listResult.getItems()) {
-                                            item.delete().addOnFailureListener(e -> {
-                                                Log.e("DeleteAccount", "Failed to delete painting: " + item.getName(), e);
-                                            });
-                                        }
-
-                                        store.collection("users").document(uid).delete();
-                                        store.collection("colors").document(uid).delete();
-                                        store.collection("paintings")
-                                                .whereEqualTo("uid", uid)
-                                                .get()
-                                                .addOnSuccessListener(queryDocumentSnapshots -> {
-                                                    for (DocumentSnapshot document : queryDocumentSnapshots) {
-                                                        document.getReference().delete();
-                                                    }
-
-                                                    fbAuth.getCurrentUser().delete()
-                                                            .addOnCompleteListener(task -> {
-                                                                LoadingManagerDialog.hideLoading();
-                                                                if (task.isSuccessful()) {
-                                                                    Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
-
-                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                                                    startActivity(intent);
-                                                                    getActivity().finish();
-                                                                } else {
-                                                                    Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
-                                                                }
-                                                            });
-                                                })
-                                                .addOnFailureListener(e -> {
-                                                    LoadingManagerDialog.hideLoading();
-                                                    Toast.makeText(getActivity(), "Failed to delete account data. Please try again.", Toast.LENGTH_SHORT).show();
-                                                });
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        LoadingManagerDialog.hideLoading();
-                                        Toast.makeText(getActivity(), "Failed to access storage data. Please try again.", Toast.LENGTH_SHORT).show();
-                                    });
-
-                        } catch (Exception e) {
-                            LoadingManagerDialog.hideLoading();
-                            Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .setNegativeButton("Cancel", (dialog, which) -> {
-                        dialog.dismiss();
-                    })
+                    .setPositiveButton("Yes", (dialog, which) -> deleteAccount())
+                    .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
                     .show();
-        }
-
-        else if (view == btnChangePassword) {
+        } else if (view == btnChangePassword) {
             FirebaseAuth fbAuth = FirebaseAuth.getInstance();
             fbAuth.sendPasswordResetEmail(fbAuth.getCurrentUser().getEmail());
             Toast.makeText(getActivity(), "Password reset link was sent to your email", Toast.LENGTH_SHORT).show();
-        }
-
-        else if (view == btnUserUi) {
-            Intent intent = new Intent(getActivity(), UiSettingsActivity.class);
-            startActivity(intent);
+        } else if (view == btnUserUi) {
+            startActivity(new Intent(getActivity(), UiSettingsActivity.class));
         }
     }
 
+    /**
+     * Deletes user account and all associated data from Firebase.
+     * This includes profile images, paintings, user info, colors,
+     * and painting references from Firestore collections.
+     */
+    private void deleteAccount() {
+        LoadingManagerDialog.showLoading(getActivity(), "Deleting account...");
+        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
+        String uid = fbAuth.getUid();
+        FirebaseFirestore store = FirebaseFirestore.getInstance();
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+
+        try {
+            // Delete profile image
+            StorageReference profileRef = storage.getReference().child("profile_images").child(uid + ".jpg");
+            profileRef.delete().addOnFailureListener(e -> {
+                // Continue even if profile image deletion fails
+            });
+
+            // Delete all paintings
+            StorageReference paintingsRef = storage.getReference().child("paintings").child(uid);
+            paintingsRef.listAll()
+                    .addOnSuccessListener(listResult -> {
+                        for (StorageReference item : listResult.getItems()) {
+                            item.delete().addOnFailureListener(e -> {
+                                Log.e("DeleteAccount", "Failed to delete painting: " + item.getName(), e);
+                            });
+                        }
+
+                        // Delete user data from Firestore
+                        store.collection("users").document(uid).delete();
+                        store.collection("colors").document(uid).delete();
+
+                        // Delete all paintings references
+                        store.collection("paintings")
+                                .whereEqualTo("uid", uid)
+                                .get()
+                                .addOnSuccessListener(queryDocumentSnapshots -> {
+                                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                                        document.getReference().delete();
+                                    }
+
+                                    // Finally delete the Firebase Authentication account
+                                    fbAuth.getCurrentUser().delete()
+                                            .addOnCompleteListener(task -> {
+                                                LoadingManagerDialog.hideLoading();
+                                                if (task.isSuccessful()) {
+                                                    Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+
+                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                                    startActivity(intent);
+                                                    getActivity().finish();
+                                                } else {
+                                                    Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                })
+                                .addOnFailureListener(e -> {
+                                    LoadingManagerDialog.hideLoading();
+                                    Toast.makeText(getActivity(), "Failed to delete account data. Please try again.", Toast.LENGTH_SHORT).show();
+                                });
+                    })
+                    .addOnFailureListener(e -> {
+                        LoadingManagerDialog.hideLoading();
+                        Toast.makeText(getActivity(), "Failed to access storage data. Please try again.", Toast.LENGTH_SHORT).show();
+                    });
+
+        } catch (Exception e) {
+            LoadingManagerDialog.hideLoading();
+            Toast.makeText(getActivity(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Show options to view, change, or delete the profile picture.
+     */
     private void showImageOptions() {
         String[] options = {"View Profile Picture", "Change Profile Picture", "Delete Profile Picture", "Cancel"};
         new AlertDialog.Builder(getContext())
                 .setTitle("Set Profile Picture")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        viewPhoto();
-                    } else if (which == 1) {
-                        pickImage();
-                    } else if (which == 2) {
-                        deletePhoto();
-                    } else {
-                        dialog.dismiss();
-                    }
+                    if (which == 0) viewPhoto();
+                    else if (which == 1) pickImage();
+                    else if (which == 2) deletePhoto();
+                    else dialog.dismiss();
                 })
                 .show();
     }
 
-//    private void pickImage() {
-//        String[] options = {"Take a Photo", "Pick from Gallery"};
-//        new AlertDialog.Builder(getContext())
-//                .setTitle("Change Photo")
-//                .setItems(options, (dialog, which) -> {
-//                    if (which == 0) { // Camera
-//                        initializeCameraUri();
-//                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//                        intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
-//                        takePhoto.launch(intent);
-//                    } else if (which == 1) { // Gallery
-//                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-//                        pickImageFromGallery.launch(intent);
-//                    }
-//                })
-//                .show();
-//    }
-
+    /**
+     * Prompt user to take a photo or pick from gallery for profile picture.
+     */
     private void pickImage() {
         String[] options = {"Take a Photo", "Pick from Gallery"};
         new AlertDialog.Builder(getContext())
                 .setTitle("Change Photo")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) { // Camera
+                    if (which == 0) {
                         initializeCameraUri();
                         if (profileImageUri != null) {
                             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                             intent.putExtra(MediaStore.EXTRA_OUTPUT, profileImageUri);
                             intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             takePhoto.launch(intent);
-                        } else {
-                            Toast.makeText(getActivity(), "Unable to create file for photo.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else if (which == 1) { // Gallery
+                        } else Toast.makeText(getActivity(), "Unable to create file for photo.", Toast.LENGTH_SHORT).show();
+                    } else {
                         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                         pickImageFromGallery.launch(intent);
                     }
@@ -378,8 +391,9 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                 .show();
     }
 
-
-
+    /**
+     * Create file URI for camera capture.
+     */
     private void initializeCameraUri() {
         try {
             File photoFile = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES),
@@ -394,142 +408,114 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
     }
 
-
-
-    // Modified Crop Image Launcher which now triggers an upload to Firebase Storage.
-    private ActivityResultLauncher<Intent> cropImageLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if(result.getResultCode() == Activity.RESULT_OK) {
-                        // Retrieve the cropped image Uri from UCrop
-                        Uri resultUri = UCrop.getOutput(result.getData());
-                        if(resultUri != null) {
-                            profileImageUri = resultUri;
-                            ivProfilePicture.setImageURI(profileImageUri);
-                            uploadProfileImage(profileImageUri);
-                        }
-                    } else {
-                        Toast.makeText(getActivity(), "Cropping failed. Please try again.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-    );
-
-    private void uploadProfileImage(Uri imageUri) {
-        LoadingManagerDialog.showLoading(getActivity(), "Uploading image...");
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-        String uid = fbAuth.getCurrentUser().getUid();
-        StorageReference storageRef = storage.getReference().child("profile_images").child(uid + ".jpg");
-
-        storageRef.putFile(imageUri)
-                .addOnSuccessListener(taskSnapshot ->
-                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
-                                    saveProfileImageUriToSharedPreferences(imageUri.toString());
-                                    Toast.makeText(getActivity(), "Image uploaded successfully.", Toast.LENGTH_SHORT).show();
-                                    LoadingManagerDialog.hideLoading();
-                                })
-                                .addOnFailureListener(e ->{
-                                        Toast.makeText(getActivity(), "Something went wrong, try again later.", Toast.LENGTH_SHORT).show();
-                                            LoadingManagerDialog.hideLoading();
-                                        }
-                                            )
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getActivity(), "Image upload failed.", Toast.LENGTH_SHORT).show();
-                    LoadingManagerDialog.hideLoading();
-                }));
-    }
-
-   /**
-     * Copies the cropped image from cache into internal storage (files/profile_images),
-     * then saves a persistent FileProvider URI into SharedPreferences.
+    /**
+     * Launcher handling crop result and uploading
+     * the cropped image URI to Firebase Storage.
      */
-
-   private void saveProfileImageUriToSharedPreferences(String uri) {
-       try {
-           // Get the source URI
-           Uri sourceUri = Uri.parse(uri);
-
-           // Create a local file in the cache directory
-           File localFile = new File(getActivity().getCacheDir(), "profile_" + System.currentTimeMillis() + ".jpg");
-
-           // Copy the file content
-           Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), sourceUri);
-           FileOutputStream fos = new FileOutputStream(localFile);
-           bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
-           fos.close();
-
-           // Get URI from the new file
-           Uri localUri = Uri.fromFile(localFile);
-
-           // Save to SharedPreferences
-           SharedPreferences.Editor editor = sharedPreferences.edit();
-           editor.putString("profileImageUri", localUri.toString());
-           editor.apply();
-
-           // Update the current profileImageUri value
-           profileImageUri = localUri;
-
-       } catch (Exception e) {
-           Toast.makeText(getActivity(), "Failed to save profile image", Toast.LENGTH_SHORT).show();
-       }
-   }
-
-
-
-    private final ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> cropImageLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
-                    if (profileImageUri != null) {
-                        // Instead of passing the full Bitmap, use the URI to begin cropping
-                        cropImage(profileImageUri);
-                    } else {
-                        Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
+                    Uri resultUri = UCrop.getOutput(result.getData());
+                    if (resultUri != null) {
+                        profileImageUri = resultUri;
+                        ivProfilePicture.setImageURI(profileImageUri);
+                        uploadProfileImage(profileImageUri);
                     }
-                } else {
-                    Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_LONG).show();
-                }
+                } else Toast.makeText(getActivity(), "Cropping failed. Please try again.", Toast.LENGTH_SHORT).show();
             }
     );
-;
 
+    /**
+     * Uploads an image URI to Firebase Storage under user's profile_images.
+     * @param imageUri URI of image to upload
+     */
+    private void uploadProfileImage(Uri imageUri) {
+        LoadingManagerDialog.showLoading(getActivity(), "Uploading image...");
+        StorageReference ref = FirebaseStorage.getInstance()
+                .getReference().child("profile_images/" + FirebaseAuth.getInstance().getCurrentUser().getUid() + ".jpg");
+        ref.putFile(imageUri)
+                .addOnSuccessListener(task -> ref.getDownloadUrl()
+                        .addOnSuccessListener(downloadUri -> {
+                            saveProfileImageUriToSharedPreferences(downloadUri.toString());
+                            Toast.makeText(getActivity(), "Image uploaded successfully.", Toast.LENGTH_SHORT).show();
+                            LoadingManagerDialog.hideLoading();
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(getActivity(), "Something went wrong, try again later.", Toast.LENGTH_SHORT).show();
+                            LoadingManagerDialog.hideLoading();
+                        }))
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getActivity(), "Image upload failed.", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
+                });
+    }
+
+    /**
+     * Copies cropped image from cache into internal storage,
+     * saves its URI in SharedPreferences, and updates current URI.
+     * @param uri Source URI string
+     */
+    private void saveProfileImageUriToSharedPreferences(String uri) {
+        try {
+            Uri sourceUri = Uri.parse(uri);
+            File localFile = new File(getActivity().getCacheDir(), "profile_" + System.currentTimeMillis() + ".jpg");
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), sourceUri);
+            FileOutputStream fos = new FileOutputStream(localFile);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+            fos.close();
+            Uri localUri = Uri.fromFile(localFile);
+            sharedPreferences.edit().putString("profileImageUri", localUri.toString()).apply();
+            profileImageUri = localUri;
+        } catch (Exception e) {
+            Toast.makeText(getActivity(), "Failed to save profile image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Launcher for camera capture result initiating cropping.
+     */
+    private final ActivityResultLauncher<Intent> takePhoto = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && profileImageUri != null) cropImage(profileImageUri);
+                else Toast.makeText(getActivity(), "An error occurred. Please try again later.", Toast.LENGTH_SHORT).show();
+            }
+    );
+
+    /**
+     * Launcher for gallery pick result initiating cropping.
+     */
     private final ActivityResultLauncher<Intent> pickImageFromGallery = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri sourceUri = result.getData().getData();
-                    if(sourceUri != null){
-                        // Start the crop process
-                        cropImage(sourceUri);
-                    }
-                } else {
-                    Toast.makeText(getActivity(), "Failed to select photo.", Toast.LENGTH_SHORT).show();
-                }
+                    if (sourceUri != null) cropImage(sourceUri);
+                } else Toast.makeText(getActivity(), "Failed to select photo.", Toast.LENGTH_SHORT).show();
             }
     );
 
+    /**
+     * Start UCrop with square aspect and max size, then launch crop activity.
+     * @param sourceUri URI of source image
+     */
     private void cropImage(Uri sourceUri) {
-        // Create a destination URI for the cropped image in the cache directory
-        Uri destinationUri = Uri.fromFile(new File(getActivity().getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
-
-        // Setup UCrop options: enforcing a square crop; adjust as needed
-        UCrop uCrop = UCrop.of(sourceUri, destinationUri)
-                .withAspectRatio(1, 1)       // Enforce 1:1 aspect ratio; remove if you want free cropping.
-                .withMaxResultSize(800, 800);  // Set maximum result dimensions
-
-        // Launch UCrop activity
-        Intent uCropIntent = uCrop.getIntent(getActivity());
-        cropImageLauncher.launch(uCropIntent);
+        Uri destUri = Uri.fromFile(new File(getActivity().getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
+        UCrop.of(sourceUri, destUri)
+                .withAspectRatio(1,1)
+                .withMaxResultSize(800,800)
+                .start(getContext(), this);
     }
 
+    /**
+     * Load and display the profile picture from SharedPreferences via Glide.
+     */
     private void loadProfilePicture() {
         sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         String savedUriString = sharedPreferences.getString("profileImageUri", null);
         if (savedUriString != null) {
-            profileImageUri = Uri.parse(savedUriString);  // Assign the loaded URI
+            profileImageUri = Uri.parse(savedUriString);
             Glide.with(this)
                     .load(profileImageUri)
                     .placeholder(R.drawable.default_profile)
@@ -541,39 +527,39 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
     }
 
+    /**
+     * Delete the local and remote profile photo, clear preferences, and reset UI.
+     */
     private void deletePhoto() {
         if (profileImageUri == null) {
             Toast.makeText(getActivity(), "No profile photo to delete", Toast.LENGTH_SHORT).show();
             return;
         }
-
         File file = new File(profileImageUri.getPath());
-        if (file.exists()) {
-            if (file.delete()) {
-                Log.d("DeletePhoto", "Photo deleted from local storage");
-            } else {
-                Log.e("DeletePhoto", "Failed to delete photo from local storage");
-            }
+        if (file.exists() && !file.delete()) {
+            Log.e("DeletePhoto", "Failed to delete photo from local storage");
         }
-
         LoadingManagerDialog.showLoading(getActivity(), "Deleting profile picture...");
-
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
         String uid = fbAuth.getCurrentUser().getUid();
         StorageReference storageRef = FirebaseStorage.getInstance().getReference("profile_images/" + uid + ".jpg");
-
         storageRef.delete()
-                .addOnSuccessListener(aVoid ->   {Toast.makeText(getActivity(), "Profile photo deleted", Toast.LENGTH_SHORT).show();
-                    LoadingManagerDialog.hideLoading();})
-                .addOnFailureListener(e -> {Toast.makeText(getActivity(), "Failed to delete profile photo", Toast.LENGTH_SHORT).show();
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getActivity(), "Profile photo deleted", Toast.LENGTH_SHORT).show();
+                    LoadingManagerDialog.hideLoading();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getActivity(), "Failed to delete profile photo", Toast.LENGTH_SHORT).show();
                     LoadingManagerDialog.hideLoading();
                 });
-
         sharedPreferences.edit().remove("profileImageUri").apply();
         ivProfilePicture.setImageResource(R.drawable.default_profile);
         profileImageUri = null;
     }
 
+    /**
+     * Launch ViewPhotoActivity to display the full-size profile photo.
+     */
     private void viewPhoto() {
         if (profileImageUri != null) {
             Intent intent = new Intent(getActivity(), ViewPhotoActivity.class);
@@ -584,49 +570,54 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
         }
     }
 
+    /**
+     * Load user details from SharedPreferences into input fields.
+     */
     private void loadDetails() {
         FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-        try {
-            sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
-            String firstName = sharedPreferences.getString("firstName", null);
-            String lastName = sharedPreferences.getString("lastName", null);
-            String phone = sharedPreferences.getString("phone", null);
-            int yob = sharedPreferences.getInt("yob", -1);
-
-            if (firstName != null && lastName != null && phone != null && yob != -1) {
-                etDetailsEmail.setText(fbAuth.getCurrentUser().getEmail());
-                etDetailsFirstName.setText(firstName);
-                etDetailsLastName.setText(lastName);
-                etDetailsPhone.setText(phone);
-                etDetailsYOB.setText(String.valueOf(yob));
-            }
-        } catch (Exception e) {
-            Toast.makeText(getActivity(), "Failed to load details. Please try again later.", Toast.LENGTH_SHORT).show();
+        sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        String firstName = sharedPreferences.getString("firstName", null);
+        String lastName = sharedPreferences.getString("lastName", null);
+        String phone = sharedPreferences.getString("phone", null);
+        int yob = sharedPreferences.getInt("yob", -1);
+        if (firstName != null && lastName != null && phone != null && yob != -1) {
+            etDetailsEmail.setText(fbAuth.getCurrentUser().getEmail());
+            etDetailsFirstName.setText(firstName);
+            etDetailsLastName.setText(lastName);
+            etDetailsPhone.setText(phone);
+            etDetailsYOB.setText(String.valueOf(yob));
         }
     }
 
+    /**
+     * Apply saved background color to root view and recursively tint buttons.
+     *
+     * @param activity Current activity context
+     * @param view     Root view to apply background and button colors
+     */
     public void loadBgColor(Activity activity, View view) {
         sharedPreferences = activity.getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("bgColor", R.color.Default);
         view.setBackgroundColor(color);
-        loadBtnColor((ViewGroup) view);
+        if (view instanceof ViewGroup) {
+            loadBtnColor((ViewGroup) view);
+        }
     }
 
+    /**
+     * Recursively apply tint to all Button instances within the ViewGroup.
+     *
+     * @param rootView ViewGroup containing buttons to tint
+     */
     private void loadBtnColor(ViewGroup rootView) {
         int color = sharedPreferences.getInt("btnColor", R.color.button);
         ColorStateList buttonColor = ColorStateList.valueOf(color);
-
         for (int i = 0; i < rootView.getChildCount(); i++) {
-            View childView = rootView.getChildAt(i);
-
-            // If the view is a button, apply the tint
-            if (childView instanceof Button) {
-                ((Button) childView).setBackgroundTintList(buttonColor);
-            }
-
-            // If the view is a ViewGroup, recursively apply the tint to its children
-            else if (childView instanceof ViewGroup) {
-                loadBtnColor((ViewGroup) childView);
+            View child = rootView.getChildAt(i);
+            if (child instanceof Button) {
+                ((Button) child).setBackgroundTintList(buttonColor);
+            } else if (child instanceof ViewGroup) {
+                loadBtnColor((ViewGroup) child);
             }
         }
     }

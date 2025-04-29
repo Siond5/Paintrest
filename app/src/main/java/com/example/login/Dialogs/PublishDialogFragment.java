@@ -31,6 +31,14 @@ import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A DialogFragment for publishing a painting.
+ * <p>
+ * Shows a preview of the provided Bitmap, allows the user to enter a name and description,
+ * choose whether to publish anonymously, and then uploads the image to Firebase Storage
+ * and its metadata (including author, timestamp, likes, and anonymity flag) to Firestore.
+ * Also applies a button tint color loaded from SharedPreferences.
+ */
 public class PublishDialogFragment extends DialogFragment {
 
     private Bitmap paintingBitmap;
@@ -42,7 +50,13 @@ public class PublishDialogFragment extends DialogFragment {
     private CheckBox isAnonymous;
     private boolean IsAnonymous;
 
-    // Factory method to create a new instance passing the Bitmap
+    /**
+     * Factory method to create a new instance of PublishDialogFragment
+     * with the given painting Bitmap.
+     *
+     * @param bitmap The Bitmap of the painting to preview and publish.
+     * @return A new instance of PublishDialogFragment.
+     */
     public static PublishDialogFragment newInstance(Bitmap bitmap) {
         PublishDialogFragment fragment = new PublishDialogFragment();
         Bundle args = new Bundle();
@@ -51,6 +65,12 @@ public class PublishDialogFragment extends DialogFragment {
         return fragment;
     }
 
+    /**
+     * Called to do initial creation of the fragment.
+     * Retrieves the painting Bitmap from arguments if provided.
+     *
+     * @param savedInstanceState The saved state bundle, if any.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +80,15 @@ public class PublishDialogFragment extends DialogFragment {
         }
     }
 
+    /**
+     * Called to have the fragment instantiate its user interface view.
+     * Inflates the layout, binds views, sets up listeners, and applies stored button colors.
+     *
+     * @param inflater           The LayoutInflater object that can be used to inflate views.
+     * @param container          The parent view that the fragment’s UI should be attached to.
+     * @param savedInstanceState The saved state bundle, if any.
+     * @return The root View of the fragment’s layout.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -86,6 +115,12 @@ public class PublishDialogFragment extends DialogFragment {
         return view;
     }
 
+    /**
+     * Creates a TextWatcher that validates the painting name field on text change.
+     * Displays an error if the name is empty.
+     *
+     * @return A configured TextWatcher instance.
+     */
     private TextWatcher createValidationWatcher() {
         return new TextWatcher() {
             @Override
@@ -106,6 +141,14 @@ public class PublishDialogFragment extends DialogFragment {
         };
     }
 
+    /**
+     * Handles the publish action:
+     * - Validates input
+     * - Compresses the bitmap to PNG
+     * - Uploads the image bytes to Firebase Storage
+     * - Retrieves the download URL
+     * - Calls saveMetadata() to store painting data in Firestore
+     */
     private void publishPainting() {
         LoadingManagerDialog.showLoading(getActivity(), "Publishing painting...");
 
@@ -113,7 +156,7 @@ public class PublishDialogFragment extends DialogFragment {
         final String paintingName = edtPaintingName.getText().toString().trim();
         final String paintingDescription = edtPaintingDescription.getText().toString().trim();
 
-        if (paintingName.isEmpty()){
+        if (paintingName.isEmpty()) {
             Toast.makeText(getContext(), "Please enter the painting's name.", Toast.LENGTH_SHORT).show();
             LoadingManagerDialog.hideLoading();
             return;
@@ -142,7 +185,6 @@ public class PublishDialogFragment extends DialogFragment {
                             Toast.makeText(getContext(), "Failed to retrieve image URL", Toast.LENGTH_SHORT).show();
                             LoadingManagerDialog.hideLoading();
                         })
-
                 )
                 .addOnFailureListener(e -> {
                     LoadingManagerDialog.hideLoading();
@@ -150,8 +192,14 @@ public class PublishDialogFragment extends DialogFragment {
                 });
     }
 
+    /**
+     * Saves painting metadata to Firestore.
+     *
+     * @param name        The painting name entered by the user.
+     * @param description The painting description entered by the user.
+     * @param imageUrl    The download URL of the uploaded image.
+     */
     private void saveMetadata(String name, String description, String imageUrl) {
-        // Build a map of painting metadata, including the new authorName field.
         Map<String, Object> paintingData = new HashMap<>();
         paintingData.put("name", name);
         paintingData.put("description", description);
@@ -172,23 +220,26 @@ public class PublishDialogFragment extends DialogFragment {
                 });
     }
 
+    /**
+     * Recursively loads a stored button tint color from SharedPreferences
+     * and applies it to all Button views within the provided root view group.
+     *
+     * @param rootView The root ViewGroup whose Button children will be tinted.
+     */
     private void loadBtnColor(ViewGroup rootView) {
-        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences =
+                getActivity().getSharedPreferences("userDetails", Context.MODE_PRIVATE);
         int color = sharedPreferences.getInt("btnColor", R.color.button);
         ColorStateList buttonColor = ColorStateList.valueOf(color);
 
         for (int i = 0; i < rootView.getChildCount(); i++) {
             View childView = rootView.getChildAt(i);
 
-            // If the view is a button, apply the tint
             if (childView instanceof Button) {
                 ((Button) childView).setBackgroundTintList(buttonColor);
-            }
-
-            // If the view is a ViewGroup, recursively apply the tint to its children
-            else if (childView instanceof ViewGroup) {
+            } else if (childView instanceof ViewGroup) {
                 loadBtnColor((ViewGroup) childView);
             }
         }
-        }
+    }
 }

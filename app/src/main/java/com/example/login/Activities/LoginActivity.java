@@ -1,3 +1,9 @@
+/**
+ * Activity for user login, navigation to signup, and password recovery.
+ *
+ * Manages user input for email and password, toggles password visibility,
+ * authenticates with Firebase, and displays a dialog for password reset.
+ */
 package com.example.login.Activities;
 
 import android.app.AlertDialog;
@@ -28,12 +34,18 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
+    // Views for user input and actions
     EditText etLoginEmail, etLoginPassword;
     Button btnLogin, goSignup, btnForgotPassword;
     ImageButton btnTogglePassword;
     boolean isPasswordVisible = false;
 
-
+    /**
+     * Called when the activity is created.
+     * Sets up edge-to-edge layout, initializes views, and attaches click listeners.
+     *
+     * @param savedInstanceState Saved state bundle
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,6 +69,9 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
 
     }
 
+    /**
+     * Initializes view references from the layout.
+     */
     private void findViews() {
         etLoginEmail = findViewById(R.id.etLoginEmail);
         etLoginPassword = findViewById(R.id.etLoginPassword);
@@ -66,6 +81,10 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         btnForgotPassword = findViewById(R.id.btnForgotPassword);
     }
 
+    /**
+     * Toggles the visibility of the password input field.
+     * Updates the input type, icon, and cursor position.
+     */
     private void togglePasswordVisibility() {
         if (isPasswordVisible) {
             etLoginPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -82,6 +101,11 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         isPasswordVisible = !isPasswordVisible;
     }
 
+    /**
+     * Handles click events for login, sign-up navigation, and password reset.
+     *
+     * @param view The clicked view
+     */
     @Override
     public void onClick(View view) {
         if (view == goSignup) {
