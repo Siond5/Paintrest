@@ -85,9 +85,9 @@ public class PublishDialogFragment extends DialogFragment {
      * Inflates the layout, binds views, sets up listeners, and applies stored button colors.
      *
      * @param inflater           The LayoutInflater object that can be used to inflate views.
-     * @param container          The parent view that the fragment’s UI should be attached to.
+     * @param container          The parent view that the fragments UI should be attached to.
      * @param savedInstanceState The saved state bundle, if any.
-     * @return The root View of the fragment’s layout.
+     * @return The root View of the fragmentï¿½s layout.
      */
     @Nullable
     @Override

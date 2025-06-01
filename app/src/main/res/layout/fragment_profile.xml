@@ -48,22 +48,22 @@
         android:textSize="15sp"
         style="@style/BoldText" />
 
-<ScrollView
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/square_bg"
-    android:id="@+id/scrollView"
-    android:visibility="visible"
-    android:padding="10dp"
-    >
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/paintingsRecyclerView"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp" />
+        android:layout_height="match_parent"
+        android:background="@drawable/square_bg"
+        android:id="@+id/scrollView"
+        android:visibility="visible"
+        android:padding="10dp"
+        >
 
-</ScrollView>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/paintingsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" />
+
+    </ScrollView>
 
     <TextView
         android:id="@+id/emptyPlaceholder"

@@ -452,24 +452,12 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
     }
 
     /**
-     * Copies cropped image from cache into internal storage,
-     * saves its URI in SharedPreferences, and updates current URI.
-     * @param uri Source URI string
+     * Save the Firebase download URL directly to SharedPreferences
+     * @param downloadUrl Firebase Storage download URL
      */
-    private void saveProfileImageUriToSharedPreferences(String uri) {
-        try {
-            Uri sourceUri = Uri.parse(uri);
-            File localFile = new File(getActivity().getCacheDir(), "profile_" + System.currentTimeMillis() + ".jpg");
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), sourceUri);
-            FileOutputStream fos = new FileOutputStream(localFile);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
-            fos.close();
-            Uri localUri = Uri.fromFile(localFile);
-            sharedPreferences.edit().putString("profileImageUri", localUri.toString()).apply();
-            profileImageUri = localUri;
-        } catch (Exception e) {
-            Toast.makeText(getActivity(), "Failed to save profile image", Toast.LENGTH_SHORT).show();
-        }
+    private void saveProfileImageUriToSharedPreferences(String downloadUrl) {
+        sharedPreferences.edit().putString("profileImageUri", downloadUrl).apply();
+        profileImageUri = Uri.parse(downloadUrl);
     }
 
     /**
@@ -502,10 +490,11 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
      */
     private void cropImage(Uri sourceUri) {
         Uri destUri = Uri.fromFile(new File(getActivity().getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
-        UCrop.of(sourceUri, destUri)
-                .withAspectRatio(1,1)
-                .withMaxResultSize(800,800)
-                .start(getContext(), this);
+        UCrop uCrop = UCrop.of(sourceUri, destUri)
+                .withAspectRatio(1, 1)
+                .withMaxResultSize(800, 800);
+        Intent uCropIntent = uCrop.getIntent(getActivity());
+        cropImageLauncher.launch(uCropIntent);  // Use the launcher instead
     }
 
     /**
