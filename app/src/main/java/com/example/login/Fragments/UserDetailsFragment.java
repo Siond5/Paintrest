@@ -326,6 +326,10 @@ public class UserDetailsFragment extends Fragment implements View.OnClickListene
                                                 if (task.isSuccessful()) {
                                                     Toast.makeText(getActivity(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
 
+                                                    DrawingViewModel drawingViewModel = new ViewModelProvider(requireActivity()).get(DrawingViewModel.class);
+                                                    drawingViewModel.setHasLogOut(true);
+                                                    drawingViewModel.reset();
+
                                                     Intent intent = new Intent(getActivity(), MainActivity.class);
                                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                                     startActivity(intent);
